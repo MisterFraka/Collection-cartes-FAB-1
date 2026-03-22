@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collection Flesh and Blood</title>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background:linear-gradient(135deg,#16082f,#050505);
+  color:white;
+}
+
+header{
+  text-align:center;
+  padding:20px;
+}
+
+.container{
+  max-width:1400px;
+  margin:auto;
+  padding:20px;
+}
+
+.controls{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:10px;
+  margin-bottom:20px;
+}
+
+input,select{
+  padding:10px;
+  border-radius:10px;
+  border:none;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:15px;
+}
+
+.card{
+  background:rgba(255,255,255,0.1);
+  border-radius:15px;
+  overflow:hidden;
+}
+
+.card img{
+  width:100%;
+}
+
+.card-body{
+  padding:10px;
+}
+
+.badge{
+  background:rgba(255,255,255,0.2);
+  padding:4px 8px;
+  border-radius:8px;
+  font-size:12px;
+  margin:2px;
+  display:inline-block;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>🃏 Collection Flesh and Blood</h1>
+</header>
+
+<div class="container">
+
+<div class="controls">
+<input id="search" placeholder="Rechercher une carte">
+<select id="set"></select>
+<select id="rarity"></select>
+<select id="owned">
+<option value="all">Toutes</option>
+<option value="owned">Possédées</option>
+<option value="missing">Manquantes</option>
+</select>
+</div>
+
+<div id="cards" class="cards"></div>
+
+</div>
+
+<script>
+let rawData=[];
+let allEditions=[];
+let owned=JSON.parse(localStorage.getItem("owned")||"{}");
+
+const searchInput=document.getElementById("search");
+const setSelect=document.getElementById("set");
+const raritySelect=document.getElementById("rarity");
+const ownedSelect=document.getElementById("owned");
+const cardsDiv=document.getElementById("cards");
+
+function flatten(data){
+  const arr=[];
+  data.forEach(card=>{
+    card.editions.forEach(e=>{
+      arr.push({
+        name:card.name,
+        pitch:card.pitch,
+        ...e
+      });
+    });
+  });
+  return arr;
+}
+
+function save(){
+  localStorage.setItem("owned",JSON.stringify(owned));
+}
+
+function populateFilters(){
+  const sets=[...new Set(allEditions.map(e=>e.set_name))].sort();
+  setSelect.innerHTML="<option value=''>Toutes les extensions</option>";
+  sets.forEach(s=>{
+    const o=document.createElement("option");
+    o.value=s;
+    o.textContent=s;
+    setSelect.appendChild(o);
+  });
+
+  const rarities=[...new Set(allEditions.map(e=>e.rarity_name))].filter(Boolean);
+  raritySelect.innerHTML="<option value=''>Toutes raretés</option>";
+  rarities.forEach(r=>{
+    const o=document.createElement("option");
+    o.value=r;
+    o.textContent=r;
+    raritySelect.appendChild(o);
+  });
+}
+
+function render(){
+  let list=allEditions;
+
+  const search=searchInput.value.toLowerCase();
+
+  if(search){
+    list=list.filter(e=>e.name.toLowerCase().includes(search));
+  }else if(setSelect.value){
+    list=list.filter(e=>e.set_name===setSelect.value);
+  }
+
+  if(raritySelect.value){
+    list=list.filter(e=>e.rarity_name===raritySelect.value);
+  }
+
+  if(ownedSelect.value==="owned"){
+    list=list.filter(e=>owned[e.printing_uid]);
+  }
+  if(ownedSelect.value==="missing"){
+    list=list.filter(e=>!owned[e.printing_uid]);
+  }
+
+  cardsDiv.innerHTML="";
+
+  list.forEach(e=>{
+    const isOwned=owned[e.printing_uid];
+
+    const div=document.createElement("div");
+    div.className="card";
+
+    div.innerHTML=`
+      ${e.image ? `<img src="${e.image}">` : ""}
+      <div class="card-body">
+        <h3>${e.name}</h3>
+        <div>
+          <span class="badge">${e.set_name}</span>
+          <span class="badge">${e.rarity_name}</span>
+          ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
+        </div>
+        <label>
+          <input type="checkbox" ${isOwned?"checked":""}>
+          Je possède
+        </label>
+      </div>
+    `;
+
+    div.querySelector("input").addEventListener("change",()=>{
+      owned[e.printing_uid]=!isOwned;
+      save();
+      render();
+    });
+
+    cardsDiv.appendChild(div);
+  });
+}
+
+async function init(){
+  const res=await fetch("cards.json");
+  rawData=await res.json();
+  allEditions=flatten(rawData);
+  populateFilters();
+  render();
+}
+
+searchInput.addEventListener("input",render);
+setSelect.addEventListener("change",render);
+raritySelect.addEventListener("change",render);
+ownedSelect.addEventListener("change",render);
+
+init();
+</script>
+
+</body>
+</html>
