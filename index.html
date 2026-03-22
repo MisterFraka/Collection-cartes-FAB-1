@@ -5,21 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Collection Flesh and Blood</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1a093e, #050505);
+      background: linear-gradient(135deg, #16082f, #050505);
       color: white;
       min-height: 100vh;
     }
 
     header {
       text-align: center;
-      padding: 24px 16px 12px;
+      padding: 24px 16px 10px;
     }
 
     h1 {
@@ -33,16 +31,16 @@
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       padding: 20px;
     }
 
     .controls {
       display: grid;
-      grid-template-columns: 1fr 220px 220px;
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     select, input {
@@ -54,25 +52,27 @@
       font-size: 1rem;
     }
 
-    .stats {
+    .progress-panel {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr;
       gap: 12px;
       margin-bottom: 20px;
     }
 
     .stat {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.10);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 18px;
       padding: 16px;
       text-align: center;
       backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
     .stat-label {
       opacity: 0.8;
       margin-bottom: 8px;
+      font-size: 0.95rem;
     }
 
     .stat-value {
@@ -80,25 +80,75 @@
       font-weight: bold;
     }
 
+    .progress-box {
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 16px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .progress-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 14px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff7b7b, #ffd36b);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .progress-text {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 18px;
     }
 
     .card {
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.10);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 20px;
-      padding: 16px;
+      overflow: hidden;
       backdrop-filter: blur(12px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-image {
+      width: 100%;
+      aspect-ratio: 63 / 88;
+      object-fit: cover;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .card-body {
+      padding: 14px;
     }
 
     .card h2 {
       margin: 0 0 10px 0;
       font-size: 1.05rem;
       line-height: 1.35;
+      min-height: 2.8em;
     }
 
     .meta {
@@ -112,20 +162,20 @@
       padding: 5px 10px;
       border-radius: 999px;
       background: rgba(255,255,255,0.12);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
+    }
+
+    .status {
+      margin: 8px 0 10px;
+      opacity: 0.95;
+      font-size: 0.95rem;
     }
 
     .owned-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 10px;
       font-weight: bold;
-    }
-
-    .status {
-      margin-top: 10px;
-      opacity: 0.9;
     }
 
     .empty {
@@ -135,18 +185,30 @@
       font-size: 1.1rem;
     }
 
-    @media (max-width: 900px) {
+    .small-note {
+      text-align: center;
+      opacity: 0.7;
+      font-size: 0.9rem;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 1100px) {
+      .controls { grid-template-columns: 1fr 1fr; }
+      .progress-panel { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 700px) {
       .controls,
-      .stats {
-        grid-template-columns: 1fr;
-      }
+      .progress-panel { grid-template-columns: 1fr; }
+
+      h1 { font-size: 1.9rem; }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>🃏 Collection Flesh and Blood</h1>
-    <div class="subtitle">Choisis une extension, puis coche les cartes que tu possèdes</div>
+    <div class="subtitle">Choisis une extension, filtre les cartes, coche celles que tu possèdes</div>
   </header>
 
   <div class="container">
@@ -159,59 +221,99 @@
         <option value="all">Toutes les raretés</option>
       </select>
 
+      <select id="ownedFilter">
+        <option value="all">Toutes</option>
+        <option value="owned">Possédées</option>
+        <option value="missing">Manquantes</option>
+      </select>
+
+      <select id="sortFilter">
+        <option value="number">Trier : numéro</option>
+        <option value="name">Trier : nom</option>
+        <option value="rarity">Trier : rareté</option>
+      </select>
+
       <input id="searchInput" type="text" placeholder="Rechercher une carte..." />
     </div>
 
-    <div class="stats">
+    <div class="progress-panel">
+      <div class="progress-box">
+        <div class="progress-title" id="progressTitle">Progression de l’extension</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Choisis une extension</div>
+      </div>
+
       <div class="stat">
         <div class="stat-label">Cartes affichées</div>
         <div class="stat-value" id="totalCards">0</div>
       </div>
+
       <div class="stat">
         <div class="stat-label">Possédées</div>
         <div class="stat-value" id="ownedCards">0</div>
       </div>
+
       <div class="stat">
         <div class="stat-label">Manquantes</div>
         <div class="stat-value" id="missingCards">0</div>
       </div>
     </div>
 
-    <div id="cardsContainer" class="cards"></div>
+    <div class="cards" id="cardsContainer"></div>
     <div id="emptyState" class="empty">Choisis une extension pour afficher les cartes.</div>
+
+    <div class="small-note">
+      Les cartes cochées sont sauvegardées dans ton navigateur.
+    </div>
   </div>
 
   <script>
     let allCards = [];
-    let ownership = JSON.parse(localStorage.getItem("fab_owned_cards")) || {};
+    let ownership = JSON.parse(localStorage.getItem("fab_owned_cards_v2")) || {};
+
+    const rarityOrder = {
+      "Token": 0,
+      "Common": 1,
+      "Rare": 2,
+      "Majestic": 3,
+      "Legendary": 4,
+      "Fabled": 5,
+      "Marvel": 6,
+      "Promo": 7
+    };
 
     const setSelect = document.getElementById("setSelect");
     const rarityFilter = document.getElementById("rarityFilter");
+    const ownedFilter = document.getElementById("ownedFilter");
+    const sortFilter = document.getElementById("sortFilter");
     const searchInput = document.getElementById("searchInput");
     const cardsContainer = document.getElementById("cardsContainer");
     const emptyState = document.getElementById("emptyState");
 
     function saveOwnership() {
-      localStorage.setItem("fab_owned_cards", JSON.stringify(ownership));
+      localStorage.setItem("fab_owned_cards_v2", JSON.stringify(ownership));
     }
 
     function toggleOwned(cardId) {
       ownership[cardId] = !ownership[cardId];
       saveOwnership();
       renderCards();
+      updateProgressForSelectedSet();
     }
 
     function populateSets() {
-      const sets = [...new Set(allCards.map(card => card.set_code))]
-        .sort((a, b) => a.localeCompare(b));
+      const uniqueSets = [...new Map(
+        allCards.map(card => [card.set_code, card.set_name])
+      )].sort((a, b) => a[1].localeCompare(b[1]));
 
-      sets.forEach(setCode => {
-        const setName = allCards.find(card => card.set_code === setCode)?.set_name || setCode;
+      for (const [setCode, setName] of uniqueSets) {
         const option = document.createElement("option");
         option.value = setCode;
         option.textContent = `${setName} (${setCode})`;
         setSelect.appendChild(option);
-      });
+      }
     }
 
     function populateRarities(selectedSet) {
@@ -223,29 +325,78 @@
         allCards
           .filter(card => card.set_code === selectedSet)
           .map(card => card.rarity)
-      )].sort((a, b) => a.localeCompare(b));
+      )].sort((a, b) => (rarityOrder[a] ?? 999) - (rarityOrder[b] ?? 999));
 
-      rarities.forEach(rarity => {
+      for (const rarity of rarities) {
         const option = document.createElement("option");
         option.value = rarity;
         option.textContent = rarity;
         rarityFilter.appendChild(option);
-      });
+      }
     }
 
-    function updateStats(filteredCards) {
-      const ownedCount = filteredCards.filter(card => ownership[card.id]).length;
-      const totalCount = filteredCards.length;
-      const missingCount = totalCount - ownedCount;
+    function updateStats(cards) {
+      const total = cards.length;
+      const owned = cards.filter(card => ownership[card.id]).length;
+      const missing = total - owned;
 
-      document.getElementById("totalCards").textContent = totalCount;
-      document.getElementById("ownedCards").textContent = ownedCount;
-      document.getElementById("missingCards").textContent = missingCount;
+      document.getElementById("totalCards").textContent = total;
+      document.getElementById("ownedCards").textContent = owned;
+      document.getElementById("missingCards").textContent = missing;
+    }
+
+    function updateProgressForSelectedSet() {
+      const selectedSet = setSelect.value;
+      const progressTitle = document.getElementById("progressTitle");
+      const progressFill = document.getElementById("progressFill");
+      const progressText = document.getElementById("progressText");
+
+      if (!selectedSet) {
+        progressTitle.textContent = "Progression de l’extension";
+        progressFill.style.width = "0%";
+        progressText.textContent = "Choisis une extension";
+        return;
+      }
+
+      const setCards = allCards.filter(card => card.set_code === selectedSet);
+      const ownedCount = setCards.filter(card => ownership[card.id]).length;
+      const totalCount = setCards.length;
+      const percent = totalCount ? Math.round((ownedCount / totalCount) * 100) : 0;
+      const setName = setCards[0]?.set_name || selectedSet;
+
+      progressTitle.textContent = `Progression : ${setName}`;
+      progressFill.style.width = `${percent}%`;
+      progressText.textContent = `${ownedCount} / ${totalCount} cartes • ${percent}% complété`;
+    }
+
+    function sortCards(cards, mode) {
+      const arr = [...cards];
+
+      if (mode === "name") {
+        arr.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (mode === "rarity") {
+        arr.sort((a, b) => {
+          const ra = rarityOrder[a.rarity] ?? 999;
+          const rb = rarityOrder[b.rarity] ?? 999;
+          if (ra !== rb) return ra - rb;
+          return a.name.localeCompare(b.name);
+        });
+      } else {
+        arr.sort((a, b) => {
+          const na = parseInt(a.number || "99999", 10);
+          const nb = parseInt(b.number || "99999", 10);
+          return na - nb;
+        });
+      }
+
+      return arr;
     }
 
     function renderCards() {
       const selectedSet = setSelect.value;
       const selectedRarity = rarityFilter.value;
+      const selectedOwned = ownedFilter.value;
+      const selectedSort = sortFilter.value;
       const search = searchInput.value.toLowerCase().trim();
 
       cardsContainer.innerHTML = "";
@@ -254,6 +405,7 @@
         emptyState.style.display = "block";
         emptyState.textContent = "Choisis une extension pour afficher les cartes.";
         updateStats([]);
+        updateProgressForSelectedSet();
         return;
       }
 
@@ -263,13 +415,23 @@
         filteredCards = filteredCards.filter(card => card.rarity === selectedRarity);
       }
 
+      if (selectedOwned === "owned") {
+        filteredCards = filteredCards.filter(card => ownership[card.id]);
+      } else if (selectedOwned === "missing") {
+        filteredCards = filteredCards.filter(card => !ownership[card.id]);
+      }
+
       if (search) {
         filteredCards = filteredCards.filter(card =>
-          card.name.toLowerCase().includes(search)
+          card.name.toLowerCase().includes(search) ||
+          (card.number && card.number.toLowerCase().includes(search))
         );
       }
 
+      filteredCards = sortCards(filteredCards, selectedSort);
+
       updateStats(filteredCards);
+      updateProgressForSelectedSet();
 
       if (filteredCards.length === 0) {
         emptyState.style.display = "block";
@@ -279,39 +441,55 @@
 
       emptyState.style.display = "none";
 
-      filteredCards.forEach(card => {
+      for (const card of filteredCards) {
         const isOwned = !!ownership[card.id];
 
         const div = document.createElement("div");
         div.className = "card";
 
-        div.innerHTML = `
-          <h2>${card.name}</h2>
-          <div class="meta">
-            <span class="badge">${card.set_name}</span>
-            <span class="badge">Rareté : ${card.rarity}</span>
-            ${card.number ? `<span class="badge">#${card.number}</span>` : ""}
+        const imageHtml = card.image
+          ? `<img class="card-image" src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+          : "";
+
+        const fallbackHtml = `
+          <div class="card-image" style="display:${card.image ? 'none' : 'flex'};align-items:center;justify-content:center;padding:18px;text-align:center;">
+            <div>
+              <div style="font-size:3rem;margin-bottom:8px;">🃏</div>
+              <div style="font-weight:bold;">${card.name}</div>
+              <div style="opacity:0.7;margin-top:6px;">Image non renseignée</div>
+            </div>
           </div>
-          <div class="status">${isOwned ? "✅ Je la possède" : "⭕ Je ne la possède pas"}</div>
-          <label class="owned-row">
-            <input type="checkbox" ${isOwned ? "checked" : ""}>
-            Je possède cette carte
-          </label>
+        `;
+
+        div.innerHTML = `
+          ${imageHtml}
+          ${fallbackHtml}
+          <div class="card-body">
+            <h2>${card.name}</h2>
+            <div class="meta">
+              <span class="badge">${card.set_name}</span>
+              <span class="badge">Rareté : ${card.rarity}</span>
+              ${card.number ? `<span class="badge">#${card.number}</span>` : ""}
+            </div>
+            <div class="status">${isOwned ? "✅ Je la possède" : "⭕ Je ne la possède pas"}</div>
+            <label class="owned-row">
+              <input type="checkbox" ${isOwned ? "checked" : ""}>
+              Je possède cette carte
+            </label>
+          </div>
         `;
 
         const checkbox = div.querySelector('input[type="checkbox"]');
         checkbox.addEventListener("change", () => toggleOwned(card.id));
 
         cardsContainer.appendChild(div);
-      });
+      }
     }
 
     async function loadCards() {
       try {
         const response = await fetch("cards.json");
-        if (!response.ok) {
-          throw new Error("Impossible de charger cards.json");
-        }
+        if (!response.ok) throw new Error("Impossible de charger cards.json");
 
         allCards = await response.json();
         populateSets();
@@ -328,6 +506,8 @@
     });
 
     rarityFilter.addEventListener("change", renderCards);
+    ownedFilter.addEventListener("change", renderCards);
+    sortFilter.addEventListener("change", renderCards);
     searchInput.addEventListener("input", renderCards);
 
     loadCards();
