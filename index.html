@@ -204,14 +204,13 @@ function getSetOrder(setName) {
 
 function normalizeFoiling(e) {
   // 1. si info directe
-  const f = String(e.foiling || "").toUpperCase().trim();
+  if (e.foiling) {
+    const f = e.foiling.toLowerCase();
 
-  if (f === "S") return "NF";
-  if (f === "R") return "RF";
-  if (f === "C") return "CF";
-
-  return "NF";
-}
+    if (f === "c" || f.includes("cold")) return "CF";
+    if (f === "r" || f.includes("rainbow")) return "RF";
+    if (f === "n") return "NF";
+  }
 
   // 2. fallback via image
   if (e.image) {
@@ -484,3 +483,4 @@ init();
 
 </body>
 </html>
+
