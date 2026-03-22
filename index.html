@@ -425,8 +425,8 @@ function render() {
       <h3>${e.name}</h3>
       <div>
         <span class="badge">${e.set_name || ""}</span>
-        <span class="badge">${translateRarity(e.rarity_name)}</span>
-        ${e.edition_name ? `<span class="badge">${translateEdition(e.edition_name)}</span>` : ""}
+        <span class="badge">RARITY=${translateRarity(e.rarity_name)}</span>
+        ${e.edition_name ? `<span class="badge">EDITION=${translateEdition(e.edition_name)}</span>` : ""}
         ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
       </div>
       <label>
