@@ -203,14 +203,16 @@ function getSetOrder(setName) {
 }
 
 function normalizeFoiling(e) {
+  // 1. si info directe
   if (e.foiling) {
-    const f = e.foiling.toLowerCase().trim();
+    const f = e.foiling.toLowerCase();
 
     if (f === "c" || f.includes("cold")) return "CF";
     if (f === "r" || f.includes("rainbow")) return "RF";
-    if (f === "s" || f.includes("standard")) return "NF";
+    if (f === "n") return "NF";
   }
 
+  // 2. fallback via image
   if (e.image) {
     const img = e.image.toUpperCase();
 
@@ -242,13 +244,11 @@ function translateEdition(e) {
   return map[(e || "").toUpperCase()] || e;
 }
   
-function getFoilOrder(e) {
-  const foil = normalizeFoiling(e);
-
+function getFoilOrder(value) {
+  const foil = normalizeFoiling(value);
   if (foil === "NF") return 0;
   if (foil === "RF") return 1;
   if (foil === "CF") return 2;
-
   return 999;
 }
 
@@ -327,8 +327,9 @@ function sortChronologically(list) {
     if (aNum !== bNum) return aNum - bNum;
 
     // FOIL
-    const foilCompare = getFoilOrder(a) - getFoilOrder(b);
-    if (foilCompare !== 0) return foilCompare;  
+    const aFoil = getFoilOrder(normalizeFoiling(a));
+    const bFoil = getFoilOrder(normalizeFoiling(b));
+    if (aFoil !== bFoil) return aFoil - bFoil;
 
     return 0;
   });
