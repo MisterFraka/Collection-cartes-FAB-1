@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ma Collection de Cartes</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #2b1055, #000);
+      color: white;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 24px 16px 8px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.4rem;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 0.8fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 14px;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    }
+
+    .stat-card .label {
+      font-size: 0.95rem;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      transition: transform 0.15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    .card h2 {
+      margin: 0 0 8px 0;
+      font-size: 1.1rem;
+      line-height: 1.3;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.85rem;
+      opacity: 0.95;
+    }
+
+    .owned-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      font-weight: bold;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.8;
+      font-size: 1.1rem;
+    }
+
+    .footer-note {
+      text-align: center;
+      opacity: 0.7;
+      font-size: 0.9rem;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 800px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🃏 Ma Collection</h1>
+    <div class="subtitle">Catalogue complet + cases à cocher</div>
+  </header>
+
+  <div class="container">
+    <div class="toolbar">
+      <input
+        type="text"
+        id="search"
+        placeholder="Rechercher une carte..."
+      />
+      <select id="setFilter">
+        <option value="all">Toutes les extensions</option>
+      </select>
+      <select id="ownedFilter">
+        <option value="all">Toutes les cartes</option>
+        <option value="owned">Cartes possédées</option>
+        <option value="missing">Cartes manquantes</option>
+      </select>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="label">Total cartes</div>
+        <div class="value" id="totalCards">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Possédées</div>
+        <div class="value" id="ownedCards">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Manquantes</div>
+        <div class="value" id="missingCards">0</div>
+      </div>
+    </div>
+
+    <div class="cards" id="cardsContainer"></div>
+    <div class="empty" id="emptyState" style="display: none;">
+      Aucune carte ne correspond à ta recherche.
+    </div>
+
+    <div class="footer-note">
+      Les cases cochées sont sauvegardées dans ton navigateur.
+    </div>
+  </div>
+
+  <script>
+    let allCards = [];
+    let ownership = JSON.parse(localStorage.getItem("ownedCards")) || {};
+
+    const cardsContainer = document.getElementById("cardsContainer");
+    const emptyState = document.getElementById("emptyState");
+    const searchInput = document.getElementById("search");
+    const setFilter = document.getElementById("setFilter");
+    const ownedFilter = document.getElementById("ownedFilter");
+
+    function saveOwnership() {
+      localStorage.setItem("ownedCards", JSON.stringify(ownership));
+    }
+
+    function getOwnedCount() {
+      return allCards.filter(card => ownership[card.id]).length;
+    }
+
+    function updateStats() {
+      const total = allCards.length;
+      const owned = getOwnedCount();
+      const missing = total - owned;
+
+      document.getElementById("totalCards").textContent = total;
+      document.getElementById("ownedCards").textContent = owned;
+      document.getElementById("missingCards").textContent = missing;
+    }
+
+    function populateSetFilter() {
+      const sets = [...new Set(allCards.map(card => card.set))].sort();
+
+      setFilter.innerHTML = '<option value="all">Toutes les extensions</option>';
+
+      sets.forEach(setName => {
+        const option = document.createElement("option");
+        option.value = setName;
+        option.textContent = setName;
+        setFilter.appendChild(option);
+      });
+    }
+
+    function toggleOwned(cardId) {
+      ownership[cardId] = !ownership[cardId];
+      saveOwnership();
+      updateStats();
+      renderCards();
+    }
+
+    function renderCards() {
+      const search = searchInput.value.toLowerCase().trim();
+      const selectedSet = setFilter.value;
+      const selectedOwned = ownedFilter.value;
+
+      const filteredCards = allCards.filter(card => {
+        const matchesSearch =
+          card.name.toLowerCase().includes(search) ||
+          card.set.toLowerCase().includes(search) ||
+          (card.rarity && card.rarity.toLowerCase().includes(search));
+
+        const matchesSet =
+          selectedSet === "all" || card.set === selectedSet;
+
+        const isOwned = !!ownership[card.id];
+        const matchesOwned =
+          selectedOwned === "all" ||
+          (selectedOwned === "owned" && isOwned) ||
+          (selectedOwned === "missing" && !isOwned);
+
+        return matchesSearch && matchesSet && matchesOwned;
+      });
+
+      cardsContainer.innerHTML = "";
+
+      if (filteredCards.length === 0) {
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      filteredCards.forEach(card => {
+        const isOwned = !!ownership[card.id];
+
+        const div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+          <h2>${card.name}</h2>
+          <div class="meta">
+            <span class="badge">Extension : ${card.set}</span>
+            ${card.rarity ? `<span class="badge">Rareté : ${card.rarity}</span>` : ""}
+          </div>
+          <div class="status">${isOwned ? "✅ Dans ma collection" : "⭕ À trouver"}</div>
+          <label class="owned-row">
+            <input type="checkbox" ${isOwned ? "checked" : ""} data-id="${card.id}">
+            Je possède cette carte
+          </label>
+        `;
+
+        const checkbox = div.querySelector('input[type="checkbox"]');
+        checkbox.addEventListener("change", () => toggleOwned(card.id));
+
+        cardsContainer.appendChild(div);
+      });
+    }
+
+    async function loadCards() {
+      try {
+        const response = await fetch("cards.json");
+        if (!response.ok) {
+          throw new Error("Impossible de charger cards.json");
+        }
+
+        allCards = await response.json();
+
+        populateSetFilter();
+        updateStats();
+        renderCards();
+      } catch (error) {
+        cardsContainer.innerHTML = `
+          <div class="empty">
+            Erreur : ${error.message}
+          </div>
+        `;
+        console.error(error);
+      }
+    }
+
+    searchInput.addEventListener("input", renderCards);
+    setFilter.addEventListener("change", renderCards);
+    ownedFilter.addEventListener("change", renderCards);
+
+    loadCards();
+  </script>
+</body>
+</html>
