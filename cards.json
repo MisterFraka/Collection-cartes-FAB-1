@@ -1,5 +1,5 @@
 [
-  { "id": "WTR-000", "name": "Heart of Fyendal", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Fable", "number": "000","image": link rel="icon" type="image/svg+xml" href="/favicon.ico"},
+  { "id": "WTR-000", "name": "Heart of Fyendal", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Fable", "number": "000","image": "link rel="icon" type="image/svg+xml" href="/favicon.ico"},
   { "id": "WTR-001", "name": "Scar for a Scar", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Common", "number": "001" },
   { "id": "WTR-002", "name": "Stroke of Foresight", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Common", "number": "002" },
   { "id": "WTR-003", "name": "Sink Below", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Rare", "number": "003" },
