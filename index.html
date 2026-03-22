@@ -202,29 +202,25 @@ function getSetOrder(setName) {
   return index === -1 ? 9999 : index;
 }
 
-function normalizeFoiling(value) {
-  if (!value) return "NF";
+function normalizeFoiling(e) {
+  // 1. si info directe
+  if (e.foiling) {
+    const f = e.foiling.toLowerCase();
 
-  const text = String(value).toLowerCase().trim();
+    if (f === "c" || f.includes("cold")) return "CF";
+    if (f === "r" || f.includes("rainbow")) return "RF";
+    if (f === "n") return "NF";
+  }
 
-  if (
-    text === "nf" ||
-    text.includes("non-foil") ||
-    text.includes("non foil") ||
-    text.includes("normal")
-  ) return "NF";
+  // 2. fallback via image
+  if (e.image) {
+    const img = e.image.toUpperCase();
 
-  if (
-    text === "rf" ||
-    text.includes("rainbow")
-  ) return "RF";
+    if (img.includes("-CF")) return "CF";
+    if (img.includes("-RF")) return "RF";
+  }
 
-  if (
-    text === "cf" ||
-    text.includes("cold")
-  ) return "CF";
-
-  return String(value).toUpperCase();
+  return "NF";
 }
 
 function getFoilOrder(value) {
@@ -235,19 +231,17 @@ function getFoilOrder(value) {
   return 999;
 }
 
-function extractCardNumber(cardId) {
-  if (!cardId) return 999999;
+function extractCardNumber(e) {
+  // 1. essayer card_id
+  if (e.card_id) {
+    const match = e.card_id.match(/(\d+)/);
+    if (match) return parseInt(match[1], 10);
+  }
 
-  const text = String(cardId).trim().toUpperCase();
-
-  // Prend le dernier bloc de chiffres
-  // GEM000 -> 0
-  // GEM001 -> 1
-  // ARC193 -> 193
-  const match = text.match(/(\d+)(?!.*\d)/);
-
-  if (match) {
-    return parseInt(match[1], 10);
+  // 2. fallback sur image
+  if (e.image) {
+    const match = e.image.match(/([A-Z]+)(\d+)/);
+    if (match) return parseInt(match[2], 10);
   }
 
   return 999999;
@@ -303,35 +297,22 @@ function save() {
 
 function sortChronologically(list) {
   return [...list].sort((a, b) => {
-    // 1. ordre chronologique des extensions
     const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
     if (setCompare !== 0) return setCompare;
 
-    // 2. sécurité sur le nom d'extension
-    if ((a.set_name || "") !== (b.set_name || "")) {
-      return (a.set_name || "").localeCompare(b.set_name || "");
-    }
-
-    // 3. tri numérique strict sur card_id
-    const aNum = extractCardNumber(a.card_id);
-    const bNum = extractCardNumber(b.card_id);
+    // NUMERO depuis image
+    const aNum = extractCardNumber(a);
+    const bNum = extractCardNumber(b);
     if (aNum !== bNum) return aNum - bNum;
 
-    // 4. tri foil : NF puis RF puis CF
-    const aFoil = getFoilOrder(a.foiling_raw ?? a.foiling ?? "");
-    const bFoil = getFoilOrder(b.foiling_raw ?? b.foiling ?? "");
+    // FOIL
+    const aFoil = getFoilOrder(normalizeFoiling(a));
+    const bFoil = getFoilOrder(normalizeFoiling(b));
     if (aFoil !== bFoil) return aFoil - bFoil;
 
-    // 5. puis card_id complet
-    if ((a.card_id || "") !== (b.card_id || "")) {
-      return (a.card_id || "").localeCompare(b.card_id || "");
-    }
-
-    // 6. enfin édition
-    return (a.edition_name || "").localeCompare(b.edition_name || "");
+    return 0;
   });
 }
-
 function populateFilters() {
   const sets = [...new Set(allEditions.map(e => e.set_name))]
     .filter(Boolean)
@@ -411,7 +392,8 @@ function render() {
   cardsDiv.innerHTML = "";
   list.forEach(e => {
     const isOwned = !!owned[e.printing_uid];
-
+    const foilLabel = normalizeFoiling(e);
+    
     const div = document.createElement("div");
     div.className = "card";
 
