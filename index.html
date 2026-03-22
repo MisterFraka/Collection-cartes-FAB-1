@@ -240,12 +240,15 @@ function extractCardNumber(cardId) {
 
   const text = String(cardId).trim().toUpperCase();
 
-  // GEM000 -> 0, GEM001 -> 1, ARC193 -> 193
-  const match = text.match(/([A-Z-]+)?(\d+)$/);
-  if (match) return parseInt(match[2], 10);
+  // Prend le dernier bloc de chiffres
+  // GEM000 -> 0
+  // GEM001 -> 1
+  // ARC193 -> 193
+  const match = text.match(/(\d+)(?!.*\d)/);
 
-  const digits = text.match(/\d+/);
-  if (digits) return parseInt(digits[0], 10);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
 
   return 999999;
 }
@@ -300,31 +303,31 @@ function save() {
 
 function sortChronologically(list) {
   return [...list].sort((a, b) => {
-    // 1. extension chronologique
+    // 1. ordre chronologique des extensions
     const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
     if (setCompare !== 0) return setCompare;
 
-    // 2. sécurité nom d'extension
-    const setNameCompare = (a.set_name || "").localeCompare(b.set_name || "");
-    if (setNameCompare !== 0) return setNameCompare;
+    // 2. sécurité sur le nom d'extension
+    if ((a.set_name || "") !== (b.set_name || "")) {
+      return (a.set_name || "").localeCompare(b.set_name || "");
+    }
 
-    // 3. numéro de carte dans l'extension
-    const numCompare = a.card_number_sort - b.card_number_sort;
-    if (numCompare !== 0) return numCompare;
+    // 3. tri numérique strict sur card_id
+    const aNum = extractCardNumber(a.card_id);
+    const bNum = extractCardNumber(b.card_id);
+    if (aNum !== bNum) return aNum - bNum;
 
     // 4. tri foil : NF puis RF puis CF
-    const foilCompare = getFoilOrder(a.foiling_raw) - getFoilOrder(b.foiling_raw);
-    if (foilCompare !== 0) return foilCompare;
+    const aFoil = getFoilOrder(a.foiling_raw ?? a.foiling ?? "");
+    const bFoil = getFoilOrder(b.foiling_raw ?? b.foiling ?? "");
+    if (aFoil !== bFoil) return aFoil - bFoil;
 
-    // 5. sécurité card_id complet
-    const cardIdCompare = (a.card_id || "").localeCompare(b.card_id || "");
-    if (cardIdCompare !== 0) return cardIdCompare;
+    // 5. puis card_id complet
+    if ((a.card_id || "") !== (b.card_id || "")) {
+      return (a.card_id || "").localeCompare(b.card_id || "");
+    }
 
-    // 6. puis nom
-    const nameCompare = (a.name || "").localeCompare(b.name || "");
-    if (nameCompare !== 0) return nameCompare;
-
-    // 7. puis édition
+    // 6. enfin édition
     return (a.edition_name || "").localeCompare(b.edition_name || "");
   });
 }
@@ -376,7 +379,7 @@ function updateProgress() {
 }
 
 function render() {
-  let list = allEditions;
+  let list = [...allEditions];
   const search = searchInput.value.toLowerCase().trim();
 
   if (search) {
@@ -399,8 +402,13 @@ function render() {
 
   list = sortChronologically(list);
 
-  cardsDiv.innerHTML = "";
+  console.log("TRI FINAL", list.slice(0, 20).map(e => ({
+    set: e.set_name,
+    card_id: e.card_id,
+    foil: e.foil_label || e.foiling_raw || e.foiling
+  })));
 
+  cardsDiv.innerHTML = "";
   list.forEach(e => {
     const isOwned = !!owned[e.printing_uid];
 
