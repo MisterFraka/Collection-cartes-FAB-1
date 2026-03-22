@@ -1,113 +1,121 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Collection Flesh and Blood</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Collection Flesh and Blood</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #16082f, #050505);
+      color: white;
+    }
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #16082f, #050505);
-  color: white;
-}
+    header {
+      text-align: center;
+      padding: 20px;
+    }
 
-header {
-  text-align: center;
-  padding: 20px;
-}
+    .container {
+      max-width: 1400px;
+      margin: auto;
+      padding: 20px;
+    }
 
-.container {
-  max-width: 1400px;
-  margin: auto;
-  padding: 20px;
-}
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
 
-.controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 20px;
-}
+    input, select {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+    }
 
-input, select {
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-}
+    .progress-box {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
 
-.progress-box {
-  background: rgba(255,255,255,0.1);
-  border-radius: 15px;
-  padding: 15px;
-  margin-bottom: 20px;
-}
+    .progress-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
 
-.progress-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
+    .progress-text {
+      margin-bottom: 10px;
+    }
 
-.progress-text {
-  margin-bottom: 10px;
-}
+    .progress-bar {
+      width: 100%;
+      height: 18px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 999px;
+      overflow: hidden;
+    }
 
-.progress-bar {
-  width: 100%;
-  height: 18px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 999px;
-  overflow: hidden;
-}
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff7b7b, #ffd36b);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
 
-.progress-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #ff7b7b, #ffd36b);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+    }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 15px;
-}
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 15px;
+      overflow: hidden;
+    }
 
-.card {
-  background: rgba(255,255,255,0.1);
-  border-radius: 15px;
-  overflow: hidden;
-}
+    .card img {
+      width: 100%;
+      display: block;
+      background: rgba(255,255,255,0.08);
+    }
 
-.card img {
-  width: 100%;
-  display: block;
-}
+    .card-body {
+      padding: 10px;
+    }
 
-.card-body {
-  padding: 10px;
-}
+    .badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin: 2px;
+      display: inline-block;
+    }
 
-.badge {
-  background: rgba(255,255,255,0.2);
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 12px;
-  margin: 2px;
-  display: inline-block;
-}
+    .error-box {
+      background: rgba(255, 80, 80, 0.18);
+      border: 1px solid rgba(255, 120, 120, 0.4);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+      display: none;
+    }
 
-@media (max-width: 800px) {
-  .controls {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+    @media (max-width: 800px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
 <header>
@@ -116,10 +124,16 @@ input, select {
 
 <div class="container">
 
+  <div id="errorBox" class="error-box"></div>
+
   <div class="controls">
     <input id="search" placeholder="Rechercher une carte">
-    <select id="set"></select>
-    <select id="rarity"></select>
+    <select id="set">
+      <option value="">Toutes les extensions</option>
+    </select>
+    <select id="rarity">
+      <option value="">Toutes raretés</option>
+    </select>
     <select id="owned">
       <option value="all">Toutes</option>
       <option value="owned">Possédées</option>
@@ -149,15 +163,12 @@ const setSelect = document.getElementById("set");
 const raritySelect = document.getElementById("rarity");
 const ownedSelect = document.getElementById("owned");
 const cardsDiv = document.getElementById("cards");
+const errorBox = document.getElementById("errorBox");
 
 const progressTitle = document.getElementById("progressTitle");
 const progressText = document.getElementById("progressText");
 const progressFill = document.getElementById("progressFill");
 
-/*
-  Ordre chronologique des extensions.
-  Tu peux en ajouter d'autres plus tard si besoin.
-*/
 const setChronology = [
   "Welcome to Rathe",
   "Arcane Rising",
@@ -176,6 +187,16 @@ const setChronology = [
   "The Hunted"
 ];
 
+function showError(message) {
+  errorBox.style.display = "block";
+  errorBox.textContent = message;
+}
+
+function hideError() {
+  errorBox.style.display = "none";
+  errorBox.textContent = "";
+}
+
 function getSetOrder(setName) {
   const index = setChronology.indexOf(setName);
   return index === -1 ? 9999 : index;
@@ -183,60 +204,56 @@ function getSetOrder(setName) {
 
 function normalizeFoiling(foiling) {
   if (!foiling) return "NF";
-
   const value = foiling.toString().toLowerCase().trim();
-
   if (value === "nf" || value.includes("non")) return "NF";
   if (value === "rf" || value.includes("rainbow")) return "RF";
   if (value === "cf" || value.includes("cold")) return "CF";
-
   return foiling.toString().toUpperCase();
 }
 
 function getFoilOrder(foiling) {
   const foil = normalizeFoiling(foiling);
-
   if (foil === "NF") return 0;
   if (foil === "RF") return 1;
   if (foil === "CF") return 2;
-
   return 999;
 }
 
 function getCardNumberSortValue(cardId) {
   if (!cardId) return 999999;
-
   const text = String(cardId).trim().toUpperCase();
-
-  // Exemples :
-  // GEM000 -> 0
-  // GEM001 -> 1
-  // ARC193 -> 193
-  // WTR005 -> 5
   const match = text.match(/([A-Z]+)(\d+)/);
-
-  if (match) {
-    return parseInt(match[2], 10);
-  }
-
+  if (match) return parseInt(match[2], 10);
   const digits = text.match(/\d+/);
-  if (digits) {
-    return parseInt(digits[0], 10);
-  }
-
+  if (digits) return parseInt(digits[0], 10);
   return 999999;
+}
 
 function flatten(data) {
   const arr = [];
+
   data.forEach(card => {
-    card.editions.forEach(e => {
+    if (!card) return;
+
+    const editions = Array.isArray(card.editions) ? card.editions : [];
+
+    editions.forEach(e => {
       arr.push({
-        name: card.name,
-        pitch: card.pitch,
-        ...e
+        name: card.name || "",
+        pitch: card.pitch || null,
+        printing_uid: e.printing_uid || e.id || e.card_id || "",
+        card_id: e.card_id || "",
+        set_code: e.set_code || "",
+        set_name: e.set_name || "",
+        edition_name: e.edition_name || "",
+        rarity_name: e.rarity_name || "",
+        image: e.image || "",
+        foiling: e.foiling || "",
+        art_variation: e.art_variation || ""
       });
     });
   });
+
   return arr;
 }
 
@@ -246,28 +263,22 @@ function save() {
 
 function sortChronologically(list) {
   return [...list].sort((a, b) => {
-    // 1. Ordre chronologique de l'extension
     const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
     if (setCompare !== 0) return setCompare;
 
-    // 2. Sécurité si set inconnu
     const setNameCompare = (a.set_name || "").localeCompare(b.set_name || "");
     if (setNameCompare !== 0) return setNameCompare;
 
-    // 3. Numéro de carte
     const cardNumberCompare =
       getCardNumberSortValue(a.card_id) - getCardNumberSortValue(b.card_id);
     if (cardNumberCompare !== 0) return cardNumberCompare;
 
-    // 4. Tri foil : NF puis RF puis CF
     const foilCompare = getFoilOrder(a.foiling) - getFoilOrder(b.foiling);
     if (foilCompare !== 0) return foilCompare;
 
-    // 5. Sécurité sur card_id complet
     const cardIdCompare = (a.card_id || "").localeCompare(b.card_id || "");
     if (cardIdCompare !== 0) return cardIdCompare;
 
-    // 6. Puis édition
     return (a.edition_name || "").localeCompare(b.edition_name || "");
   });
 }
@@ -352,14 +363,15 @@ function render() {
     div.className = "card";
 
     div.innerHTML = `
-      ${e.image ? `<img src="${e.image}" alt="${e.name}">` : ""}
+      ${e.image ? `<img src="${e.image}" alt="${e.name}" onerror="this.style.display='none'">` : ""}
       <div class="card-body">
         <h3>${e.name}</h3>
         <div>
           <span class="badge">${e.set_name || ""}</span>
           <span class="badge">${e.rarity_name || ""}</span>
           ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
-          ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}          
+          ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
+          ${e.card_id ? `<span class="badge">${e.card_id}</span>` : ""}
         </div>
         <label>
           <input type="checkbox" ${isOwned ? "checked" : ""}>
@@ -369,7 +381,7 @@ function render() {
     `;
 
     div.querySelector("input").addEventListener("change", () => {
-      owned[e.printing_uid] = !owned[e.printing_uid];
+      owned[e.printing_uid] = !isOwned;
       save();
       render();
       updateProgress();
@@ -382,11 +394,35 @@ function render() {
 }
 
 async function init() {
-  const res = await fetch("cards.json");
-  rawData = await res.json();
-  allEditions = flatten(rawData);
-  populateFilters();
-  render();
+  try {
+    hideError();
+
+    const res = await fetch("cards.json");
+    if (!res.ok) {
+      throw new Error("Impossible de charger cards.json");
+    }
+
+    rawData = await res.json();
+
+    if (!Array.isArray(rawData)) {
+      throw new Error("cards.json n'est pas une liste valide");
+    }
+
+    allEditions = flatten(rawData);
+
+    if (!allEditions.length) {
+      throw new Error("Aucune édition trouvée dans cards.json");
+    }
+
+    populateFilters();
+    render();
+  } catch (error) {
+    console.error(error);
+    showError("Erreur de chargement : " + error.message);
+    cardsDiv.innerHTML = "";
+    setSelect.innerHTML = "<option value=''>Toutes les extensions</option>";
+    raritySelect.innerHTML = "<option value=''>Toutes raretés</option>";
+  }
 }
 
 searchInput.addEventListener("input", render);
