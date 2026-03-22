@@ -182,16 +182,49 @@ function getSetOrder(setName) {
 }
 
 function normalizeFoiling(foiling) {
-  if (!foiling) return "";
+  if (!foiling) return "NF";
+
   const value = foiling.toString().toLowerCase().trim();
 
-  if (value.includes("rainbow")) return "RF";
-  if (value.includes("cold")) return "CF";
-  if (value === "rf") return "RF";
-  if (value === "cf") return "CF";
+  if (value === "nf" || value.includes("non")) return "NF";
+  if (value === "rf" || value.includes("rainbow")) return "RF";
+  if (value === "cf" || value.includes("cold")) return "CF";
 
-  return foiling;
+  return foiling.toString().toUpperCase();
 }
+
+function getFoilOrder(foiling) {
+  const foil = normalizeFoiling(foiling);
+
+  if (foil === "NF") return 0;
+  if (foil === "RF") return 1;
+  if (foil === "CF") return 2;
+
+  return 999;
+}
+
+function getCardNumberSortValue(cardId) {
+  if (!cardId) return 999999;
+
+  const text = String(cardId).trim().toUpperCase();
+
+  // Exemples :
+  // GEM000 -> 0
+  // GEM001 -> 1
+  // ARC193 -> 193
+  // WTR005 -> 5
+  const match = text.match(/([A-Z]+)(\d+)/);
+
+  if (match) {
+    return parseInt(match[2], 10);
+  }
+
+  const digits = text.match(/\d+/);
+  if (digits) {
+    return parseInt(digits[0], 10);
+  }
+
+  return 999999;
 
 function flatten(data) {
   const arr = [];
@@ -213,15 +246,28 @@ function save() {
 
 function sortChronologically(list) {
   return [...list].sort((a, b) => {
+    // 1. Ordre chronologique de l'extension
     const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
     if (setCompare !== 0) return setCompare;
 
-    const nameCompare = (a.name || "").localeCompare(b.name || "");
-    if (nameCompare !== 0) return nameCompare;
+    // 2. Sécurité si set inconnu
+    const setNameCompare = (a.set_name || "").localeCompare(b.set_name || "");
+    if (setNameCompare !== 0) return setNameCompare;
 
+    // 3. Numéro de carte
+    const cardNumberCompare =
+      getCardNumberSortValue(a.card_id) - getCardNumberSortValue(b.card_id);
+    if (cardNumberCompare !== 0) return cardNumberCompare;
+
+    // 4. Tri foil : NF puis RF puis CF
+    const foilCompare = getFoilOrder(a.foiling) - getFoilOrder(b.foiling);
+    if (foilCompare !== 0) return foilCompare;
+
+    // 5. Sécurité sur card_id complet
     const cardIdCompare = (a.card_id || "").localeCompare(b.card_id || "");
     if (cardIdCompare !== 0) return cardIdCompare;
 
+    // 6. Puis édition
     return (a.edition_name || "").localeCompare(b.edition_name || "");
   });
 }
@@ -313,7 +359,7 @@ function render() {
           <span class="badge">${e.set_name || ""}</span>
           <span class="badge">${e.rarity_name || ""}</span>
           ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
-          ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
+          ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}          
         </div>
         <label>
           <input type="checkbox" ${isOwned ? "checked" : ""}>
