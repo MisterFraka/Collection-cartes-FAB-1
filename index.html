@@ -262,7 +262,7 @@
     </div>
 
     <div class="cards" id="cardsContainer"></div>
-    <div id="emptyState" class="empty">Choisis une extension pour afficher les cartes.</div>
+    <div id="emptyState" class="empty">Choisis une extension ou recherche une carte.</div>
 
     <div class="small-note">
       Les cartes cochées sont sauvegardées dans ton navigateur.
@@ -392,99 +392,108 @@
       return arr;
     }
 
-    function renderCards() {
-      const selectedSet = setSelect.value;
-      const selectedRarity = rarityFilter.value;
-      const selectedOwned = ownedFilter.value;
-      const selectedSort = sortFilter.value;
-      const search = searchInput.value.toLowerCase().trim();
+function renderCards() {
+  const selectedSet = setSelect.value;
+  const selectedRarity = rarityFilter.value;
+  const selectedOwned = ownedFilter.value;
+  const selectedSort = sortFilter.value;
+  const search = searchInput.value.toLowerCase().trim();
 
-      cardsContainer.innerHTML = "";
+  cardsContainer.innerHTML = "";
 
-      if (!selectedSet) {
-        emptyState.style.display = "block";
-        emptyState.textContent = "Choisis une extension pour afficher les cartes.";
-        updateStats([]);
-        updateProgressForSelectedSet();
-        return;
-      }
+  let filteredCards = [];
 
-      let filteredCards = allCards.filter(card => card.set_code === selectedSet);
-
-      if (selectedRarity !== "all") {
-        filteredCards = filteredCards.filter(card => card.rarity === selectedRarity);
-      }
-
-      if (selectedOwned === "owned") {
-        filteredCards = filteredCards.filter(card => ownership[card.id]);
-      } else if (selectedOwned === "missing") {
-        filteredCards = filteredCards.filter(card => !ownership[card.id]);
-      }
-
-      if (search) {
-        filteredCards = filteredCards.filter(card =>
-          card.name.toLowerCase().includes(search) ||
-          (card.number && card.number.toLowerCase().includes(search))
-        );
-      }
-
-      filteredCards = sortCards(filteredCards, selectedSort);
-
-      updateStats(filteredCards);
+  if (search) {
+    filteredCards = allCards.filter(card =>
+      card.name.toLowerCase().includes(search)
+    );
+  } else {
+    if (!selectedSet) {
+      emptyState.style.display = "block";
+      emptyState.textContent = "Choisis une extension ou recherche une carte.";
+      updateStats([]);
       updateProgressForSelectedSet();
-
-      if (filteredCards.length === 0) {
-        emptyState.style.display = "block";
-        emptyState.textContent = "Aucune carte trouvée pour ce filtre.";
-        return;
-      }
-
-      emptyState.style.display = "none";
-
-      for (const card of filteredCards) {
-        const isOwned = !!ownership[card.id];
-
-        const div = document.createElement("div");
-        div.className = "card";
-
-        const imageHtml = card.image
-          ? `<img class="card-image" src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
-          : "";
-
-        const fallbackHtml = `
-          <div class="card-image" style="display:${card.image ? 'none' : 'flex'};align-items:center;justify-content:center;padding:18px;text-align:center;">
-            <div>
-              <div style="font-size:3rem;margin-bottom:8px;">🃏</div>
-              <div style="font-weight:bold;">${card.name}</div>
-              <div style="opacity:0.7;margin-top:6px;">Image non renseignée</div>
-            </div>
-          </div>
-        `;
-
-        div.innerHTML = `
-          ${imageHtml}
-          ${fallbackHtml}
-          <div class="card-body">
-            <h2>${card.name}</h2>
-            <div class="meta">
-              <span class="badge">${card.set_name}</span>
-              <span class="badge">Rareté : ${card.rarity}</span>
-              ${card.number ? `<span class="badge">#${card.number}</span>` : ""}
-            </div>
-            <div class="status">${isOwned ? "✅ Je la possède" : "⭕ Je ne la possède pas"}</div>
-            <label class="owned-row">
-              <input type="checkbox" ${isOwned ? "checked" : ""}>
-              Je possède cette carte
-            </label>
-          </div>
-        `;
-
-        const checkbox = div.querySelector('input[type="checkbox"]');
-        checkbox.addEventListener("change", () => toggleOwned(card.id));
-
-        cardsContainer.appendChild(div);
-      }
+      return;
     }
+
+    filteredCards = allCards.filter(card => card.set_code === selectedSet);
+  }
+
+  if (selectedRarity !== "all") {
+    filteredCards = filteredCards.filter(card => card.rarity === selectedRarity);
+  }
+
+  if (selectedOwned === "owned") {
+    filteredCards = filteredCards.filter(card => ownership[card.id]);
+  } else if (selectedOwned === "missing") {
+    filteredCards = filteredCards.filter(card => !ownership[card.id]);
+  }
+
+  filteredCards = sortCards(filteredCards, selectedSort);
+
+  updateStats(filteredCards);
+
+  if (search) {
+    document.getElementById("progressTitle").textContent = "Résultats de recherche";
+    document.getElementById("progressFill").style.width = "0%";
+    document.getElementById("progressText").textContent =
+      `${filteredCards.length} édition(s) trouvée(s)`;
+  } else {
+    updateProgressForSelectedSet();
+  }
+
+  if (filteredCards.length === 0) {
+    emptyState.style.display = "block";
+    emptyState.textContent = "Aucune carte trouvée pour ce filtre.";
+    return;
+  }
+
+  emptyState.style.display = "none";
+
+  for (const card of filteredCards) {
+    const isOwned = !!ownership[card.id];
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    const imageHtml = card.image
+      ? `<img class="card-image" src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      : "";
+
+    const fallbackHtml = `
+      <div class="card-image" style="display:${card.image ? 'none' : 'flex'};align-items:center;justify-content:center;padding:18px;text-align:center;">
+        <div>
+          <div style="font-size:3rem;margin-bottom:8px;">🃏</div>
+          <div style="font-weight:bold;">${card.name}</div>
+          <div style="opacity:0.7;margin-top:6px;">Image non renseignée</div>
+        </div>
+      </div>
+    `;
+
+    div.innerHTML = `
+      ${imageHtml}
+      ${fallbackHtml}
+      <div class="card-body">
+        <h2>${card.name}</h2>
+        <div class="meta">
+          <span class="badge">${card.set_name}</span>
+          <span class="badge">Rareté : ${card.rarity}</span>
+          ${card.number ? `<span class="badge">#${card.number}</span>` : ""}
+        </div>
+        <div class="status">${isOwned ? "✅ Je la possède" : "⭕ Je ne la possède pas"}</div>
+        <label class="owned-row">
+          <input type="checkbox" ${isOwned ? "checked" : ""}>
+          Je possède cette carte
+        </label>
+      </div>
+    `;
+
+    const checkbox = div.querySelector('input[type="checkbox"]');
+    checkbox.addEventListener("change", () => toggleOwned(card.id));
+
+    cardsContainer.appendChild(div);
+  }
+}
 
     async function loadCards() {
       try {
