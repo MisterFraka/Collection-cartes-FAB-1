@@ -154,6 +154,45 @@ const progressTitle = document.getElementById("progressTitle");
 const progressText = document.getElementById("progressText");
 const progressFill = document.getElementById("progressFill");
 
+/*
+  Ordre chronologique des extensions.
+  Tu peux en ajouter d'autres plus tard si besoin.
+*/
+const setChronology = [
+  "Welcome to Rathe",
+  "Arcane Rising",
+  "Crucible of War",
+  "Monarch",
+  "Tales of Aria",
+  "Everfest",
+  "Uprising",
+  "Dynasty",
+  "Outsiders",
+  "Dusk till Dawn",
+  "Bright Lights",
+  "Heavy Hitters",
+  "Part the Mistveil",
+  "Rosetta",
+  "The Hunted"
+];
+
+function getSetOrder(setName) {
+  const index = setChronology.indexOf(setName);
+  return index === -1 ? 9999 : index;
+}
+
+function normalizeFoiling(foiling) {
+  if (!foiling) return "";
+  const value = foiling.toString().toLowerCase().trim();
+
+  if (value.includes("rainbow")) return "RF";
+  if (value.includes("cold")) return "CF";
+  if (value === "rf") return "RF";
+  if (value === "cf") return "CF";
+
+  return foiling;
+}
+
 function flatten(data) {
   const arr = [];
   data.forEach(card => {
@@ -172,8 +211,26 @@ function save() {
   localStorage.setItem("owned", JSON.stringify(owned));
 }
 
+function sortChronologically(list) {
+  return [...list].sort((a, b) => {
+    const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
+    if (setCompare !== 0) return setCompare;
+
+    const nameCompare = (a.name || "").localeCompare(b.name || "");
+    if (nameCompare !== 0) return nameCompare;
+
+    const cardIdCompare = (a.card_id || "").localeCompare(b.card_id || "");
+    if (cardIdCompare !== 0) return cardIdCompare;
+
+    return (a.edition_name || "").localeCompare(b.edition_name || "");
+  });
+}
+
 function populateFilters() {
-  const sets = [...new Set(allEditions.map(e => e.set_name))].filter(Boolean).sort();
+  const sets = [...new Set(allEditions.map(e => e.set_name))]
+    .filter(Boolean)
+    .sort((a, b) => getSetOrder(a) - getSetOrder(b) || a.localeCompare(b));
+
   setSelect.innerHTML = "<option value=''>Toutes les extensions</option>";
   sets.forEach(s => {
     const o = document.createElement("option");
@@ -182,7 +239,10 @@ function populateFilters() {
     setSelect.appendChild(o);
   });
 
-  const rarities = [...new Set(allEditions.map(e => e.rarity_name))].filter(Boolean).sort();
+  const rarities = [...new Set(allEditions.map(e => e.rarity_name))]
+    .filter(Boolean)
+    .sort();
+
   raritySelect.innerHTML = "<option value=''>Toutes raretés</option>";
   rarities.forEach(r => {
     const o = document.createElement("option");
@@ -214,11 +274,10 @@ function updateProgress() {
 
 function render() {
   let list = allEditions;
-
   const search = searchInput.value.toLowerCase().trim();
 
   if (search) {
-    list = list.filter(e => e.name.toLowerCase().includes(search));
+    list = list.filter(e => (e.name || "").toLowerCase().includes(search));
   } else if (setSelect.value) {
     list = list.filter(e => e.set_name === setSelect.value);
   }
@@ -235,10 +294,13 @@ function render() {
     list = list.filter(e => !owned[e.printing_uid]);
   }
 
+  list = sortChronologically(list);
+
   cardsDiv.innerHTML = "";
 
   list.forEach(e => {
     const isOwned = !!owned[e.printing_uid];
+    const foilLabel = normalizeFoiling(e.foiling);
 
     const div = document.createElement("div");
     div.className = "card";
@@ -251,6 +313,7 @@ function render() {
           <span class="badge">${e.set_name || ""}</span>
           <span class="badge">${e.rarity_name || ""}</span>
           ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
+          ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
         </div>
         <label>
           <input type="checkbox" ${isOwned ? "checked" : ""}>
