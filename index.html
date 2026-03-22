@@ -242,11 +242,13 @@ function translateEdition(e) {
   return map[(e || "").toUpperCase()] || e;
 }
   
-function getFoilOrder(value) {
-  const foil = normalizeFoiling(value);
+function getFoilOrder(e) {
+  const foil = normalizeFoiling(e);
+
   if (foil === "NF") return 0;
   if (foil === "RF") return 1;
   if (foil === "CF") return 2;
+
   return 999;
 }
 
@@ -325,9 +327,8 @@ function sortChronologically(list) {
     if (aNum !== bNum) return aNum - bNum;
 
     // FOIL
-    const aFoil = getFoilOrder(normalizeFoiling(a));
-    const bFoil = getFoilOrder(normalizeFoiling(b));
-    if (aFoil !== bFoil) return aFoil - bFoil;
+    const foilCompare = getFoilOrder(a) - getFoilOrder(b);
+    if (foilCompare !== 0) return foilCompare;  
 
     return 0;
   });
