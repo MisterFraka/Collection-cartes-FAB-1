@@ -224,16 +224,16 @@ function normalizeFoiling(e) {
 }
 
 function translateRarity(r) {
-    const map = {
-      P: "Promo",
-      C: "Common",
-      R: "Rare",
-      M: "Majestic",
-      L: "Legendary",
-      F: "Fabled"
-    };
-    return map[r] || r;
-  }
+  const map = {
+    P: "Promo",
+    C: "Common",
+    R: "Rare",
+    M: "Majestic",
+    L: "Legendary",
+    F: "Fabled"
+  };
+  return map[(r || "").toUpperCase()] || r;
+}
 
 function translateEdition(e) {
   const map = {
@@ -241,7 +241,7 @@ function translateEdition(e) {
     "1": "1st Ed",
     U: "Unlimited"
   };
-  return map[e] || e;
+  return map[(e || "").toUpperCase()] || e;
 }
   
 function getFoilOrder(value) {
