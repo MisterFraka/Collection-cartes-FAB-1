@@ -391,47 +391,54 @@ function render() {
   list = sortChronologically(list);
 
   console.log("TRI FINAL", list.slice(0, 20).map(e => ({
+    name: e.name,
     set: e.set_name,
     card_id: e.card_id,
-    foil: e.foil_label || e.foiling_raw || e.foiling
+    foiling: e.foiling,
+    foilLabel: normalizeFoiling(e),
+    image: e.image
   })));
 
   cardsDiv.innerHTML = "";
-  list.forEach(e => {
-  list.forEach(e => {
-  const isOwned = !!owned[e.printing_uid];
-  const foilLabel = normalizeFoiling(e);
-  console.log(e.name, e.foiling, foilLabel, e.image);
 
-  const div = document.createElement("div");
-  div.className = "card";
+  list.forEach(e => {
+    const isOwned = !!owned[e.printing_uid];
+    const foilLabel = normalizeFoiling(e);
 
-  div.innerHTML = `
-    ${e.image ? `<img src="${e.image}" alt="${e.name}" onerror="this.style.display='none'">` : ""}
-    <div class="card-body">
-      <h3>${e.name}</h3>
-      <div>
-        <span class="badge">${e.set_name || ""}</span>
-        <span class="badge">${translateRarity(e.rarity_name)}</span>
-        ${e.edition_name ? `<span class="badge">${translateEdition(e.edition_name)}</span>` : ""}
-        <span class="badge">${foilLabel}</span>
+    console.log(e.name, e.foiling, foilLabel, e.image);
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      ${e.image ? `<img src="${e.image}" alt="${e.name}" onerror="this.style.display='none'">` : ""}
+      <div class="card-body">
+        <h3>${e.name}</h3>
+        <div>
+          <span class="badge">${e.set_name || ""}</span>
+          <span class="badge">${translateRarity(e.rarity_name)}</span>
+          ${e.edition_name ? `<span class="badge">${translateEdition(e.edition_name)}</span>` : ""}
+          <span class="badge">${foilLabel}</span>
+        </div>
+        <label>
+          <input type="checkbox" ${isOwned ? "checked" : ""}>
+          Je possède
+        </label>
       </div>
-      <label>
-        <input type="checkbox" ${isOwned ? "checked" : ""}>
-        Je possède
-      </label>
-    </div>
-  `;
+    `;
 
-  div.querySelector("input").addEventListener("change", () => {
-    owned[e.printing_uid] = !isOwned;
-    save();
-    render();
-    updateProgress();
+    div.querySelector("input").addEventListener("change", () => {
+      owned[e.printing_uid] = !isOwned;
+      save();
+      render();
+      updateProgress();
+    });
+
+    cardsDiv.appendChild(div);
   });
 
-  cardsDiv.appendChild(div);
-});
+  updateProgress();
+}
 
 async function init() {
   try {
