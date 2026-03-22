@@ -202,30 +202,51 @@ function getSetOrder(setName) {
   return index === -1 ? 9999 : index;
 }
 
-function normalizeFoiling(foiling) {
-  if (!foiling) return "NF";
-  const value = foiling.toString().toLowerCase().trim();
-  if (value === "nf" || value.includes("non")) return "NF";
-  if (value === "rf" || value.includes("rainbow")) return "RF";
-  if (value === "cf" || value.includes("cold")) return "CF";
-  return foiling.toString().toUpperCase();
+function normalizeFoiling(value) {
+  if (!value) return "NF";
+
+  const text = String(value).toLowerCase().trim();
+
+  if (
+    text === "nf" ||
+    text.includes("non-foil") ||
+    text.includes("non foil") ||
+    text.includes("normal")
+  ) return "NF";
+
+  if (
+    text === "rf" ||
+    text.includes("rainbow")
+  ) return "RF";
+
+  if (
+    text === "cf" ||
+    text.includes("cold")
+  ) return "CF";
+
+  return String(value).toUpperCase();
 }
 
-function getFoilOrder(foiling) {
-  const foil = normalizeFoiling(foiling);
+function getFoilOrder(value) {
+  const foil = normalizeFoiling(value);
   if (foil === "NF") return 0;
   if (foil === "RF") return 1;
   if (foil === "CF") return 2;
   return 999;
 }
 
-function getCardNumberSortValue(cardId) {
+function extractCardNumber(cardId) {
   if (!cardId) return 999999;
+
   const text = String(cardId).trim().toUpperCase();
-  const match = text.match(/([A-Z]+)(\d+)/);
+
+  // GEM000 -> 0, GEM001 -> 1, ARC193 -> 193
+  const match = text.match(/([A-Z-]+)?(\d+)$/);
   if (match) return parseInt(match[2], 10);
+
   const digits = text.match(/\d+/);
   if (digits) return parseInt(digits[0], 10);
+
   return 999999;
 }
 
@@ -234,21 +255,37 @@ function flatten(data) {
 
   data.forEach(card => {
     if (!card) return;
-
     const editions = Array.isArray(card.editions) ? card.editions : [];
 
     editions.forEach(e => {
+      const foilValue =
+        e.foiling ??
+        e.foil ??
+        e.finish ??
+        e.finish_type ??
+        e.printing ??
+        "";
+
+      const cardIdValue =
+        e.card_id ??
+        e.number ??
+        e.collector_number ??
+        e.identifier ??
+        "";
+
       arr.push({
         name: card.name || "",
         pitch: card.pitch || null,
-        printing_uid: e.printing_uid || e.id || e.card_id || "",
-        card_id: e.card_id || "",
+        printing_uid: e.printing_uid || e.id || cardIdValue || "",
+        card_id: String(cardIdValue || ""),
+        card_number_sort: extractCardNumber(cardIdValue),
         set_code: e.set_code || "",
         set_name: e.set_name || "",
-        edition_name: e.edition_name || "",
-        rarity_name: e.rarity_name || "",
-        image: e.image || "",
-        foiling: e.foiling || "",
+        edition_name: e.edition_name || e.edition || "",
+        rarity_name: e.rarity_name || e.rarity || "",
+        image: e.image || e.image_url || "",
+        foiling_raw: foilValue,
+        foil_label: normalizeFoiling(foilValue),
         art_variation: e.art_variation || ""
       });
     });
@@ -263,22 +300,31 @@ function save() {
 
 function sortChronologically(list) {
   return [...list].sort((a, b) => {
+    // 1. extension chronologique
     const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
     if (setCompare !== 0) return setCompare;
 
+    // 2. sécurité nom d'extension
     const setNameCompare = (a.set_name || "").localeCompare(b.set_name || "");
     if (setNameCompare !== 0) return setNameCompare;
 
-    const cardNumberCompare =
-      getCardNumberSortValue(a.card_id) - getCardNumberSortValue(b.card_id);
-    if (cardNumberCompare !== 0) return cardNumberCompare;
+    // 3. numéro de carte dans l'extension
+    const numCompare = a.card_number_sort - b.card_number_sort;
+    if (numCompare !== 0) return numCompare;
 
-    const foilCompare = getFoilOrder(a.foiling) - getFoilOrder(b.foiling);
+    // 4. tri foil : NF puis RF puis CF
+    const foilCompare = getFoilOrder(a.foiling_raw) - getFoilOrder(b.foiling_raw);
     if (foilCompare !== 0) return foilCompare;
 
+    // 5. sécurité card_id complet
     const cardIdCompare = (a.card_id || "").localeCompare(b.card_id || "");
     if (cardIdCompare !== 0) return cardIdCompare;
 
+    // 6. puis nom
+    const nameCompare = (a.name || "").localeCompare(b.name || "");
+    if (nameCompare !== 0) return nameCompare;
+
+    // 7. puis édition
     return (a.edition_name || "").localeCompare(b.edition_name || "");
   });
 }
@@ -357,7 +403,6 @@ function render() {
 
   list.forEach(e => {
     const isOwned = !!owned[e.printing_uid];
-    const foilLabel = normalizeFoiling(e.foiling);
 
     const div = document.createElement("div");
     div.className = "card";
@@ -370,7 +415,7 @@ function render() {
           <span class="badge">${e.set_name || ""}</span>
           <span class="badge">${e.rarity_name || ""}</span>
           ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
-          ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
+          ${e.foil_label ? `<span class="badge">${e.foil_label}</span>` : ""}
           ${e.card_id ? `<span class="badge">${e.card_id}</span>` : ""}
         </div>
         <label>
@@ -398,21 +443,13 @@ async function init() {
     hideError();
 
     const res = await fetch("cards.json");
-    if (!res.ok) {
-      throw new Error("Impossible de charger cards.json");
-    }
+    if (!res.ok) throw new Error("Impossible de charger cards.json");
 
     rawData = await res.json();
-
-    if (!Array.isArray(rawData)) {
-      throw new Error("cards.json n'est pas une liste valide");
-    }
+    if (!Array.isArray(rawData)) throw new Error("cards.json n'est pas une liste valide");
 
     allEditions = flatten(rawData);
-
-    if (!allEditions.length) {
-      throw new Error("Aucune édition trouvée dans cards.json");
-    }
+    if (!allEditions.length) throw new Error("Aucune édition trouvée dans cards.json");
 
     populateFilters();
     render();
