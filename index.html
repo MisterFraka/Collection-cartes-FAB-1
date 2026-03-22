@@ -7,63 +7,103 @@
 
 <style>
 body {
-  margin:0;
-  font-family:Arial;
-  background:linear-gradient(135deg,#16082f,#050505);
-  color:white;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #16082f, #050505);
+  color: white;
 }
 
-header{
-  text-align:center;
-  padding:20px;
+header {
+  text-align: center;
+  padding: 20px;
 }
 
-.container{
-  max-width:1400px;
-  margin:auto;
-  padding:20px;
+.container {
+  max-width: 1400px;
+  margin: auto;
+  padding: 20px;
 }
 
-.controls{
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr 1fr;
-  gap:10px;
-  margin-bottom:20px;
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-input,select{
-  padding:10px;
-  border-radius:10px;
-  border:none;
+input, select {
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
 }
 
-.cards{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-  gap:15px;
+.progress-box {
+  background: rgba(255,255,255,0.1);
+  border-radius: 15px;
+  padding: 15px;
+  margin-bottom: 20px;
 }
 
-.card{
-  background:rgba(255,255,255,0.1);
-  border-radius:15px;
-  overflow:hidden;
+.progress-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
 }
 
-.card img{
-  width:100%;
+.progress-text {
+  margin-bottom: 10px;
 }
 
-.card-body{
-  padding:10px;
+.progress-bar {
+  width: 100%;
+  height: 18px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
-.badge{
-  background:rgba(255,255,255,0.2);
-  padding:4px 8px;
-  border-radius:8px;
-  font-size:12px;
-  margin:2px;
-  display:inline-block;
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff7b7b, #ffd36b);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.card {
+  background: rgba(255,255,255,0.1);
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.card img {
+  width: 100%;
+  display: block;
+}
+
+.card-body {
+  padding: 10px;
+}
+
+.badge {
+  background: rgba(255,255,255,0.2);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin: 2px;
+  display: inline-block;
+}
+
+@media (max-width: 800px) {
+  .controls {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 </head>
@@ -71,44 +111,56 @@ input,select{
 <body>
 
 <header>
-<h1>🃏 Collection Flesh and Blood</h1>
+  <h1>🃏 Collection Flesh and Blood</h1>
 </header>
 
 <div class="container">
 
-<div class="controls">
-<input id="search" placeholder="Rechercher une carte">
-<select id="set"></select>
-<select id="rarity"></select>
-<select id="owned">
-<option value="all">Toutes</option>
-<option value="owned">Possédées</option>
-<option value="missing">Manquantes</option>
-</select>
-</div>
+  <div class="controls">
+    <input id="search" placeholder="Rechercher une carte">
+    <select id="set"></select>
+    <select id="rarity"></select>
+    <select id="owned">
+      <option value="all">Toutes</option>
+      <option value="owned">Possédées</option>
+      <option value="missing">Manquantes</option>
+    </select>
+  </div>
 
-<div id="cards" class="cards"></div>
+  <div class="progress-box">
+    <div class="progress-title" id="progressTitle">Progression de l’extension</div>
+    <div class="progress-text" id="progressText">Choisis une extension</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <div id="cards" class="cards"></div>
 
 </div>
 
 <script>
-let rawData=[];
-let allEditions=[];
-let owned=JSON.parse(localStorage.getItem("owned")||"{}");
+let rawData = [];
+let allEditions = [];
+let owned = JSON.parse(localStorage.getItem("owned") || "{}");
 
-const searchInput=document.getElementById("search");
-const setSelect=document.getElementById("set");
-const raritySelect=document.getElementById("rarity");
-const ownedSelect=document.getElementById("owned");
-const cardsDiv=document.getElementById("cards");
+const searchInput = document.getElementById("search");
+const setSelect = document.getElementById("set");
+const raritySelect = document.getElementById("rarity");
+const ownedSelect = document.getElementById("owned");
+const cardsDiv = document.getElementById("cards");
 
-function flatten(data){
-  const arr=[];
-  data.forEach(card=>{
-    card.editions.forEach(e=>{
+const progressTitle = document.getElementById("progressTitle");
+const progressText = document.getElementById("progressText");
+const progressFill = document.getElementById("progressFill");
+
+function flatten(data) {
+  const arr = [];
+  data.forEach(card => {
+    card.editions.forEach(e => {
       arr.push({
-        name:card.name,
-        pitch:card.pitch,
+        name: card.name,
+        pitch: card.pitch,
         ...e
       });
     });
@@ -116,98 +168,122 @@ function flatten(data){
   return arr;
 }
 
-function save(){
-  localStorage.setItem("owned",JSON.stringify(owned));
+function save() {
+  localStorage.setItem("owned", JSON.stringify(owned));
 }
 
-function populateFilters(){
-  const sets=[...new Set(allEditions.map(e=>e.set_name))].sort();
-  setSelect.innerHTML="<option value=''>Toutes les extensions</option>";
-  sets.forEach(s=>{
-    const o=document.createElement("option");
-    o.value=s;
-    o.textContent=s;
+function populateFilters() {
+  const sets = [...new Set(allEditions.map(e => e.set_name))].filter(Boolean).sort();
+  setSelect.innerHTML = "<option value=''>Toutes les extensions</option>";
+  sets.forEach(s => {
+    const o = document.createElement("option");
+    o.value = s;
+    o.textContent = s;
     setSelect.appendChild(o);
   });
 
-  const rarities=[...new Set(allEditions.map(e=>e.rarity_name))].filter(Boolean);
-  raritySelect.innerHTML="<option value=''>Toutes raretés</option>";
-  rarities.forEach(r=>{
-    const o=document.createElement("option");
-    o.value=r;
-    o.textContent=r;
+  const rarities = [...new Set(allEditions.map(e => e.rarity_name))].filter(Boolean).sort();
+  raritySelect.innerHTML = "<option value=''>Toutes raretés</option>";
+  rarities.forEach(r => {
+    const o = document.createElement("option");
+    o.value = r;
+    o.textContent = r;
     raritySelect.appendChild(o);
   });
 }
 
-function render(){
-  let list=allEditions;
+function updateProgress() {
+  const selectedSet = setSelect.value;
 
-  const search=searchInput.value.toLowerCase();
-
-  if(search){
-    list=list.filter(e=>e.name.toLowerCase().includes(search));
-  }else if(setSelect.value){
-    list=list.filter(e=>e.set_name===setSelect.value);
+  if (!selectedSet) {
+    progressTitle.textContent = "Progression de l’extension";
+    progressText.textContent = "Choisis une extension";
+    progressFill.style.width = "0%";
+    return;
   }
 
-  if(raritySelect.value){
-    list=list.filter(e=>e.rarity_name===raritySelect.value);
+  const setCards = allEditions.filter(e => e.set_name === selectedSet);
+  const total = setCards.length;
+  const ownedCount = setCards.filter(e => owned[e.printing_uid]).length;
+  const percent = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
+
+  progressTitle.textContent = selectedSet;
+  progressText.textContent = `${ownedCount} / ${total} cartes possédées • ${percent}% complété`;
+  progressFill.style.width = percent + "%";
+}
+
+function render() {
+  let list = allEditions;
+
+  const search = searchInput.value.toLowerCase().trim();
+
+  if (search) {
+    list = list.filter(e => e.name.toLowerCase().includes(search));
+  } else if (setSelect.value) {
+    list = list.filter(e => e.set_name === setSelect.value);
   }
 
-  if(ownedSelect.value==="owned"){
-    list=list.filter(e=>owned[e.printing_uid]);
-  }
-  if(ownedSelect.value==="missing"){
-    list=list.filter(e=>!owned[e.printing_uid]);
+  if (raritySelect.value) {
+    list = list.filter(e => e.rarity_name === raritySelect.value);
   }
 
-  cardsDiv.innerHTML="";
+  if (ownedSelect.value === "owned") {
+    list = list.filter(e => owned[e.printing_uid]);
+  }
 
-  list.forEach(e=>{
-    const isOwned=owned[e.printing_uid];
+  if (ownedSelect.value === "missing") {
+    list = list.filter(e => !owned[e.printing_uid]);
+  }
 
-    const div=document.createElement("div");
-    div.className="card";
+  cardsDiv.innerHTML = "";
 
-    div.innerHTML=`
-      ${e.image ? `<img src="${e.image}">` : ""}
+  list.forEach(e => {
+    const isOwned = !!owned[e.printing_uid];
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      ${e.image ? `<img src="${e.image}" alt="${e.name}">` : ""}
       <div class="card-body">
         <h3>${e.name}</h3>
         <div>
-          <span class="badge">${e.set_name}</span>
-          <span class="badge">${e.rarity_name}</span>
+          <span class="badge">${e.set_name || ""}</span>
+          <span class="badge">${e.rarity_name || ""}</span>
           ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
         </div>
         <label>
-          <input type="checkbox" ${isOwned?"checked":""}>
+          <input type="checkbox" ${isOwned ? "checked" : ""}>
           Je possède
         </label>
       </div>
     `;
 
-    div.querySelector("input").addEventListener("change",()=>{
-      owned[e.printing_uid]=!isOwned;
+    div.querySelector("input").addEventListener("change", () => {
+      owned[e.printing_uid] = !owned[e.printing_uid];
       save();
       render();
+      updateProgress();
     });
 
     cardsDiv.appendChild(div);
   });
+
+  updateProgress();
 }
 
-async function init(){
-  const res=await fetch("cards.json");
-  rawData=await res.json();
-  allEditions=flatten(rawData);
+async function init() {
+  const res = await fetch("cards.json");
+  rawData = await res.json();
+  allEditions = flatten(rawData);
   populateFilters();
   render();
 }
 
-searchInput.addEventListener("input",render);
-setSelect.addEventListener("change",render);
-raritySelect.addEventListener("change",render);
-ownedSelect.addEventListener("change",render);
+searchInput.addEventListener("input", render);
+setSelect.addEventListener("change", render);
+raritySelect.addEventListener("change", render);
+ownedSelect.addEventListener("change", render);
 
 init();
 </script>
