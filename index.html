@@ -424,11 +424,10 @@ function render() {
     <div class="card-body">
       <h3>${e.name}</h3>
       <div>
+        <span class="badge">${e.set_name || ""}</span>
         <span class="badge">${translateRarity(e.rarity_name)}</span>
-        <span class="badge">${translateEdition(e.edition_name)}</span>
-        ${e.edition_name ? `<span class="badge">${e.edition_name}</span>` : ""}
+        ${e.edition_name ? `<span class="badge">${translateEdition(e.edition_name)}</span>` : ""}
         ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
-        ${e.card_id ? `<span class="badge">${e.card_id}</span>` : ""}
       </div>
       <label>
         <input type="checkbox" ${isOwned ? "checked" : ""}>
