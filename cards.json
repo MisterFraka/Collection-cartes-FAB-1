@@ -1,0 +1,26 @@
+[
+  { "id": "WTR-001", "name": "Scar for a Scar", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Common", "number": "001" },
+  { "id": "WTR-002", "name": "Stroke of Foresight", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Common", "number": "002" },
+  { "id": "WTR-003", "name": "Sink Below", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Rare", "number": "003" },
+  { "id": "WTR-004", "name": "Steelblade Shunt", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Rare", "number": "004" },
+  { "id": "WTR-005", "name": "Blessing of Deliverance", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Majestic", "number": "005" },
+  { "id": "WTR-006", "name": "Fyendal's Spring Tunic", "set_code": "WTR", "set_name": "Welcome to Rathe", "rarity": "Legendary", "number": "006" },
+
+  { "id": "ARC-001", "name": "Whisper of the Oracle", "set_code": "ARC", "set_name": "Arcane Rising", "rarity": "Common", "number": "001" },
+  { "id": "ARC-002", "name": "Fate Foreseen", "set_code": "ARC", "set_name": "Arcane Rising", "rarity": "Rare", "number": "002" },
+  { "id": "ARC-003", "name": "Command and Conquer", "set_code": "ARC", "set_name": "Arcane Rising", "rarity": "Majestic", "number": "003" },
+  { "id": "ARC-004", "name": "Arcanite Skullcap", "set_code": "ARC", "set_name": "Arcane Rising", "rarity": "Legendary", "number": "004" },
+
+  { "id": "CRU-001", "name": "Beneath the Waves", "set_code": "CRU", "set_name": "Crucible of War", "rarity": "Common", "number": "001" },
+  { "id": "CRU-002", "name": "Promise of Plenty", "set_code": "CRU", "set_name": "Crucible of War", "rarity": "Rare", "number": "002" },
+  { "id": "CRU-003", "name": "Enlightened Strike", "set_code": "CRU", "set_name": "Crucible of War", "rarity": "Majestic", "number": "003" },
+  { "id": "CRU-004", "name": "Courage of Bladehold", "set_code": "CRU", "set_name": "Crucible of War", "rarity": "Legendary", "number": "004" },
+
+  { "id": "DYN-001", "name": "Construct Nitro Mechanoid", "set_code": "DYN", "set_name": "Dynasty", "rarity": "Marvel", "number": "001" },
+  { "id": "DYN-002", "name": "Regicide", "set_code": "DYN", "set_name": "Dynasty", "rarity": "Majestic", "number": "002" },
+  { "id": "DYN-003", "name": "Crown of Providence", "set_code": "DYN", "set_name": "Dynasty", "rarity": "Legendary", "number": "003" },
+
+  { "id": "OUT-001", "name": "Lace with Bloodrot", "set_code": "OUT", "set_name": "Outsiders", "rarity": "Common", "number": "001" },
+  { "id": "OUT-002", "name": "Spreading Plague", "set_code": "OUT", "set_name": "Outsiders", "rarity": "Rare", "number": "002" },
+  { "id": "OUT-003", "name": "Codex of Frailty", "set_code": "OUT", "set_name": "Outsiders", "rarity": "Majestic", "number": "003" }
+]
