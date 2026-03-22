@@ -27,18 +27,18 @@
 
     .subtitle {
       margin-top: 8px;
-      opacity: 0.8;
+      opacity: 0.82;
     }
 
     .container {
-      max-width: 1400px;
+      max-width: 1450px;
       margin: 0 auto;
       padding: 20px;
     }
 
     .controls {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -59,14 +59,17 @@
       margin-bottom: 20px;
     }
 
-    .stat {
+    .box, .stat {
       background: rgba(255,255,255,0.10);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 18px;
       padding: 16px;
-      text-align: center;
       backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+    }
+
+    .stat {
+      text-align: center;
     }
 
     .stat-label {
@@ -78,15 +81,6 @@
     .stat-value {
       font-size: 1.6rem;
       font-weight: bold;
-    }
-
-    .progress-box {
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 18px;
-      padding: 16px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
 
     .progress-title {
@@ -113,7 +107,13 @@
 
     .progress-text {
       font-size: 0.95rem;
-      opacity: 0.9;
+      opacity: 0.92;
+    }
+
+    .section-title {
+      margin: 28px 0 14px;
+      font-size: 1.2rem;
+      font-weight: bold;
     }
 
     .cards {
@@ -148,7 +148,6 @@
       margin: 0 0 10px 0;
       font-size: 1.05rem;
       line-height: 1.35;
-      min-height: 2.8em;
     }
 
     .meta {
@@ -208,37 +207,33 @@
 <body>
   <header>
     <h1>🃏 Collection Flesh and Blood</h1>
-    <div class="subtitle">Choisis une extension, filtre les cartes, coche celles que tu possèdes</div>
+    <div class="subtitle">Recherche une carte pour voir toutes ses éditions, ou choisis une extension</div>
   </header>
 
   <div class="container">
     <div class="controls">
+      <input id="searchInput" type="text" placeholder="Rechercher une carte..." />
       <select id="setSelect">
-        <option value="">-- Choisir une extension --</option>
+        <option value="">Toutes les extensions</option>
       </select>
-
       <select id="rarityFilter">
         <option value="all">Toutes les raretés</option>
       </select>
-
       <select id="ownedFilter">
         <option value="all">Toutes</option>
         <option value="owned">Possédées</option>
         <option value="missing">Manquantes</option>
       </select>
-
       <select id="sortFilter">
-        <option value="number">Trier : numéro</option>
         <option value="name">Trier : nom</option>
+        <option value="set">Trier : extension</option>
         <option value="rarity">Trier : rareté</option>
       </select>
-
-      <input id="searchInput" type="text" placeholder="Rechercher une carte..." />
     </div>
 
     <div class="progress-panel">
-      <div class="progress-box">
-        <div class="progress-title" id="progressTitle">Progression de l’extension</div>
+      <div class="box">
+        <div class="progress-title" id="progressTitle">Progression</div>
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
@@ -246,7 +241,7 @@
       </div>
 
       <div class="stat">
-        <div class="stat-label">Cartes affichées</div>
+        <div class="stat-label">Éditions affichées</div>
         <div class="stat-value" id="totalCards">0</div>
       </div>
 
@@ -261,17 +256,19 @@
       </div>
     </div>
 
+    <div class="section-title" id="resultsTitle">Résultats</div>
     <div class="cards" id="cardsContainer"></div>
-    <div id="emptyState" class="empty">Choisis une extension ou recherche une carte.</div>
+    <div id="emptyState" class="empty">Charge les cartes, puis recherche un nom ou choisis une extension.</div>
 
     <div class="small-note">
-      Les cartes cochées sont sauvegardées dans ton navigateur.
+      Les cases cochées sont sauvegardées dans ton navigateur.
     </div>
   </div>
 
   <script>
     let allCards = [];
-    let ownership = JSON.parse(localStorage.getItem("fab_owned_cards_v2")) || {};
+    let flatPrintings = [];
+    let ownership = JSON.parse(localStorage.getItem("fab_owned_editions")) || {};
 
     const rarityOrder = {
       "Token": 0,
@@ -284,60 +281,77 @@
       "Promo": 7
     };
 
+    const searchInput = document.getElementById("searchInput");
     const setSelect = document.getElementById("setSelect");
     const rarityFilter = document.getElementById("rarityFilter");
     const ownedFilter = document.getElementById("ownedFilter");
     const sortFilter = document.getElementById("sortFilter");
-    const searchInput = document.getElementById("searchInput");
     const cardsContainer = document.getElementById("cardsContainer");
     const emptyState = document.getElementById("emptyState");
+    const resultsTitle = document.getElementById("resultsTitle");
 
     function saveOwnership() {
-      localStorage.setItem("fab_owned_cards_v2", JSON.stringify(ownership));
+      localStorage.setItem("fab_owned_editions", JSON.stringify(ownership));
     }
 
-    function toggleOwned(cardId) {
-      ownership[cardId] = !ownership[cardId];
+    function toggleOwned(printingUid) {
+      ownership[printingUid] = !ownership[printingUid];
       saveOwnership();
       renderCards();
-      updateProgressForSelectedSet();
+    }
+
+    function flattenCards(groupedCards) {
+      const result = [];
+      for (const card of groupedCards) {
+        for (const edition of (card.editions || [])) {
+          result.push({
+            card_name: card.name,
+            pitch: card.pitch,
+            ...edition
+          });
+        }
+      }
+      return result;
     }
 
     function populateSets() {
-      const uniqueSets = [...new Map(
-        allCards.map(card => [card.set_code, card.set_name])
-      )].sort((a, b) => a[1].localeCompare(b[1]));
+      const seen = new Map();
+      flatPrintings.forEach(p => {
+        if (!seen.has(p.set_code)) {
+          seen.set(p.set_code, p.set_name || p.set_code);
+        }
+      });
 
-      for (const [setCode, setName] of uniqueSets) {
+      const sorted = [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+
+      setSelect.innerHTML = '<option value="">Toutes les extensions</option>';
+      for (const [code, name] of sorted) {
         const option = document.createElement("option");
-        option.value = setCode;
-        option.textContent = `${setName} (${setCode})`;
+        option.value = code;
+        option.textContent = `${name} (${code})`;
         setSelect.appendChild(option);
       }
     }
 
-    function populateRarities(selectedSet) {
-      rarityFilter.innerHTML = '<option value="all">Toutes les raretés</option>';
-
-      if (!selectedSet) return;
-
+    function populateRarities(filteredBase) {
       const rarities = [...new Set(
-        allCards
-          .filter(card => card.set_code === selectedSet)
-          .map(card => card.rarity)
+        filteredBase
+          .map(p => p.rarity_name)
+          .filter(Boolean)
       )].sort((a, b) => (rarityOrder[a] ?? 999) - (rarityOrder[b] ?? 999));
 
-      for (const rarity of rarities) {
+      rarityFilter.innerHTML = '<option value="all">Toutes les raretés</option>';
+      rarities.forEach(rarity => {
         const option = document.createElement("option");
         option.value = rarity;
         option.textContent = rarity;
         rarityFilter.appendChild(option);
-      }
+      });
     }
 
-    function updateStats(cards) {
-      const total = cards.length;
-      const owned = cards.filter(card => ownership[card.id]).length;
+    function updateStats(items) {
+      const total = items.length;
+      const owned = items.filter(item => ownership[item.printing_uid]).length;
       const missing = total - owned;
 
       document.getElementById("totalCards").textContent = total;
@@ -345,155 +359,154 @@
       document.getElementById("missingCards").textContent = missing;
     }
 
-    function updateProgressForSelectedSet() {
-      const selectedSet = setSelect.value;
-      const progressTitle = document.getElementById("progressTitle");
-      const progressFill = document.getElementById("progressFill");
-      const progressText = document.getElementById("progressText");
+    function updateProgress(items, mode) {
+      const title = document.getElementById("progressTitle");
+      const fill = document.getElementById("progressFill");
+      const text = document.getElementById("progressText");
 
-      if (!selectedSet) {
-        progressTitle.textContent = "Progression de l’extension";
-        progressFill.style.width = "0%";
-        progressText.textContent = "Choisis une extension";
+      if (mode === "search") {
+        title.textContent = "Résultats de recherche";
+        fill.style.width = "0%";
+        text.textContent = `${items.length} édition(s) trouvée(s)`;
         return;
       }
 
-      const setCards = allCards.filter(card => card.set_code === selectedSet);
-      const ownedCount = setCards.filter(card => ownership[card.id]).length;
-      const totalCount = setCards.length;
-      const percent = totalCount ? Math.round((ownedCount / totalCount) * 100) : 0;
-      const setName = setCards[0]?.set_name || selectedSet;
+      const selectedSet = setSelect.value;
+      if (!selectedSet) {
+        title.textContent = "Progression";
+        fill.style.width = "0%";
+        text.textContent = "Choisis une extension";
+        return;
+      }
 
-      progressTitle.textContent = `Progression : ${setName}`;
-      progressFill.style.width = `${percent}%`;
-      progressText.textContent = `${ownedCount} / ${totalCount} cartes • ${percent}% complété`;
+      const setItems = flatPrintings.filter(p => p.set_code === selectedSet);
+      const owned = setItems.filter(p => ownership[p.printing_uid]).length;
+      const total = setItems.length;
+      const percent = total ? Math.round((owned / total) * 100) : 0;
+      const setName = setItems[0]?.set_name || selectedSet;
+
+      title.textContent = `Progression : ${setName}`;
+      fill.style.width = `${percent}%`;
+      text.textContent = `${owned} / ${total} éditions • ${percent}% complété`;
     }
 
-    function sortCards(cards, mode) {
-      const arr = [...cards];
+    function sortItems(items, mode) {
+      const arr = [...items];
 
-      if (mode === "name") {
-        arr.sort((a, b) => a.name.localeCompare(b.name));
+      if (mode === "set") {
+        arr.sort((a, b) =>
+          (a.set_name || "").localeCompare(b.set_name || "") ||
+          a.card_name.localeCompare(b.card_name)
+        );
       } else if (mode === "rarity") {
-        arr.sort((a, b) => {
-          const ra = rarityOrder[a.rarity] ?? 999;
-          const rb = rarityOrder[b.rarity] ?? 999;
-          if (ra !== rb) return ra - rb;
-          return a.name.localeCompare(b.name);
-        });
+        arr.sort((a, b) =>
+          (rarityOrder[a.rarity_name] ?? 999) - (rarityOrder[b.rarity_name] ?? 999) ||
+          a.card_name.localeCompare(b.card_name)
+        );
       } else {
-        arr.sort((a, b) => {
-          const na = parseInt(a.number || "99999", 10);
-          const nb = parseInt(b.number || "99999", 10);
-          return na - nb;
-        });
+        arr.sort((a, b) =>
+          a.card_name.localeCompare(b.card_name) ||
+          (a.set_name || "").localeCompare(b.set_name || "")
+        );
       }
 
       return arr;
     }
 
-function renderCards() {
-  const selectedSet = setSelect.value;
-  const selectedRarity = rarityFilter.value;
-  const selectedOwned = ownedFilter.value;
-  const selectedSort = sortFilter.value;
-  const search = searchInput.value.toLowerCase().trim();
+    function renderCards() {
+      const search = searchInput.value.toLowerCase().trim();
+      const selectedSet = setSelect.value;
+      const selectedRarity = rarityFilter.value;
+      const selectedOwned = ownedFilter.value;
+      const selectedSort = sortFilter.value;
 
-  cardsContainer.innerHTML = "";
+      let base = [];
 
-  let filteredCards = [];
+      if (search) {
+        base = flatPrintings.filter(item =>
+          item.card_name.toLowerCase().includes(search)
+        );
+        resultsTitle.textContent = `Éditions trouvées pour : "${searchInput.value}"`;
+      } else if (selectedSet) {
+        base = flatPrintings.filter(item => item.set_code === selectedSet);
+        const setName = base[0]?.set_name || selectedSet;
+        resultsTitle.textContent = `Cartes de l’extension : ${setName}`;
+      } else {
+        base = flatPrintings;
+        resultsTitle.textContent = "Toutes les cartes";
+      }
 
-  if (search) {
-    filteredCards = allCards.filter(card =>
-      card.name.toLowerCase().includes(search)
-    );
-  } else {
-    if (!selectedSet) {
-      emptyState.style.display = "block";
-      emptyState.textContent = "Choisis une extension ou recherche une carte.";
-      updateStats([]);
-      updateProgressForSelectedSet();
-      return;
+      if (selectedRarity !== "all") {
+        base = base.filter(item => item.rarity_name === selectedRarity);
+      }
+
+      if (selectedOwned === "owned") {
+        base = base.filter(item => ownership[item.printing_uid]);
+      } else if (selectedOwned === "missing") {
+        base = base.filter(item => !ownership[item.printing_uid]);
+      }
+
+      const items = sortItems(base, selectedSort);
+
+      cardsContainer.innerHTML = "";
+      updateStats(items);
+      updateProgress(items, search ? "search" : "set");
+
+      if (items.length === 0) {
+        emptyState.style.display = "block";
+        emptyState.textContent = "Aucun résultat pour ce filtre.";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      for (const item of items) {
+        const isOwned = !!ownership[item.printing_uid];
+
+        const div = document.createElement("div");
+        div.className = "card";
+
+        const imageHtml = item.image
+          ? `<img class="card-image" src="${item.image}" alt="${item.card_name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+          : "";
+
+        const fallbackHtml = `
+          <div class="card-image" style="display:${item.image ? 'none' : 'flex'};align-items:center;justify-content:center;padding:18px;text-align:center;">
+            <div>
+              <div style="font-size:3rem;margin-bottom:8px;">🃏</div>
+              <div style="font-weight:bold;">${item.card_name}</div>
+              <div style="opacity:0.7;margin-top:6px;">Image non renseignée</div>
+            </div>
+          </div>
+        `;
+
+        div.innerHTML = `
+          ${imageHtml}
+          ${fallbackHtml}
+          <div class="card-body">
+            <h2>${item.card_name}</h2>
+            <div class="meta">
+              <span class="badge">${item.set_name || item.set_code}</span>
+              ${item.edition_name ? `<span class="badge">Édition : ${item.edition_name}</span>` : ""}
+              ${item.rarity_name ? `<span class="badge">Rareté : ${item.rarity_name}</span>` : ""}
+              ${item.card_id ? `<span class="badge">${item.card_id}</span>` : ""}
+              ${item.foiling ? `<span class="badge">Foil : ${item.foiling}</span>` : ""}
+              ${item.art_variation ? `<span class="badge">Art : ${item.art_variation}</span>` : ""}
+            </div>
+            <div class="status">${isOwned ? "✅ Je possède cette édition" : "⭕ Je ne possède pas cette édition"}</div>
+            <label class="owned-row">
+              <input type="checkbox" ${isOwned ? "checked" : ""}>
+              Je possède cette édition
+            </label>
+          </div>
+        `;
+
+        const checkbox = div.querySelector('input[type="checkbox"]');
+        checkbox.addEventListener("change", () => toggleOwned(item.printing_uid));
+
+        cardsContainer.appendChild(div);
+      }
     }
-
-    filteredCards = allCards.filter(card => card.set_code === selectedSet);
-  }
-
-  if (selectedRarity !== "all") {
-    filteredCards = filteredCards.filter(card => card.rarity === selectedRarity);
-  }
-
-  if (selectedOwned === "owned") {
-    filteredCards = filteredCards.filter(card => ownership[card.id]);
-  } else if (selectedOwned === "missing") {
-    filteredCards = filteredCards.filter(card => !ownership[card.id]);
-  }
-
-  filteredCards = sortCards(filteredCards, selectedSort);
-
-  updateStats(filteredCards);
-
-  if (search) {
-    document.getElementById("progressTitle").textContent = "Résultats de recherche";
-    document.getElementById("progressFill").style.width = "0%";
-    document.getElementById("progressText").textContent =
-      `${filteredCards.length} édition(s) trouvée(s)`;
-  } else {
-    updateProgressForSelectedSet();
-  }
-
-  if (filteredCards.length === 0) {
-    emptyState.style.display = "block";
-    emptyState.textContent = "Aucune carte trouvée pour ce filtre.";
-    return;
-  }
-
-  emptyState.style.display = "none";
-
-  for (const card of filteredCards) {
-    const isOwned = !!ownership[card.id];
-
-    const div = document.createElement("div");
-    div.className = "card";
-
-    const imageHtml = card.image
-      ? `<img class="card-image" src="${card.image}" alt="${card.name}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
-      : "";
-
-    const fallbackHtml = `
-      <div class="card-image" style="display:${card.image ? 'none' : 'flex'};align-items:center;justify-content:center;padding:18px;text-align:center;">
-        <div>
-          <div style="font-size:3rem;margin-bottom:8px;">🃏</div>
-          <div style="font-weight:bold;">${card.name}</div>
-          <div style="opacity:0.7;margin-top:6px;">Image non renseignée</div>
-        </div>
-      </div>
-    `;
-
-    div.innerHTML = `
-      ${imageHtml}
-      ${fallbackHtml}
-      <div class="card-body">
-        <h2>${card.name}</h2>
-        <div class="meta">
-          <span class="badge">${card.set_name}</span>
-          <span class="badge">Rareté : ${card.rarity}</span>
-          ${card.number ? `<span class="badge">#${card.number}</span>` : ""}
-        </div>
-        <div class="status">${isOwned ? "✅ Je la possède" : "⭕ Je ne la possède pas"}</div>
-        <label class="owned-row">
-          <input type="checkbox" ${isOwned ? "checked" : ""}>
-          Je possède cette carte
-        </label>
-      </div>
-    `;
-
-    const checkbox = div.querySelector('input[type="checkbox"]');
-    checkbox.addEventListener("change", () => toggleOwned(card.id));
-
-    cardsContainer.appendChild(div);
-  }
-}
 
     async function loadCards() {
       try {
@@ -501,23 +514,45 @@ function renderCards() {
         if (!response.ok) throw new Error("Impossible de charger cards.json");
 
         allCards = await response.json();
+        flatPrintings = flattenCards(allCards);
+
         populateSets();
+        populateRarities(flatPrintings);
+        renderCards();
       } catch (error) {
         emptyState.style.display = "block";
-        emptyState.textContent = "Erreur lors du chargement des cartes.";
+        emptyState.textContent = `Erreur : ${error.message}`;
         console.error(error);
       }
     }
 
+    searchInput.addEventListener("input", () => {
+      const search = searchInput.value.trim().toLowerCase();
+
+      let rarityBase = flatPrintings;
+      if (!search && setSelect.value) {
+        rarityBase = flatPrintings.filter(p => p.set_code === setSelect.value);
+      } else if (search) {
+        rarityBase = flatPrintings.filter(p => p.card_name.toLowerCase().includes(search));
+      }
+
+      populateRarities(rarityBase);
+      renderCards();
+    });
+
     setSelect.addEventListener("change", () => {
-      populateRarities(setSelect.value);
+      if (!searchInput.value.trim()) {
+        const rarityBase = setSelect.value
+          ? flatPrintings.filter(p => p.set_code === setSelect.value)
+          : flatPrintings;
+        populateRarities(rarityBase);
+      }
       renderCards();
     });
 
     rarityFilter.addEventListener("change", renderCards);
     ownedFilter.addEventListener("change", renderCards);
     sortFilter.addEventListener("change", renderCards);
-    searchInput.addEventListener("input", renderCards);
 
     loadCards();
   </script>
