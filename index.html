@@ -222,6 +222,27 @@ function normalizeFoiling(e) {
 
   return "NF";
 }
+
+function translateRarity(r) {
+    const map = {
+      P: "Promo",
+      C: "Common",
+      R: "Rare",
+      M: "Majestic",
+      L: "Legendary",
+      F: "Fabled"
+    };
+    return map[r] || r;
+  }
+
+function translateEdition(e) {
+  const map = {
+    N: "Normal",
+    "1": "1st Ed",
+    U: "Unlimited"
+  };
+  return map[e] || e;
+}
   
 function getFoilOrder(value) {
   const foil = normalizeFoiling(value);
@@ -339,27 +360,7 @@ function populateFilters() {
   });
 }
 
-function translateRarity(r) {
-  const map = {
-    P: "Promo",
-    C: "Common",
-    R: "Rare",
-    M: "Majestic",
-    L: "Legendary",
-    F: "Fabled"
-  };
-  return map[r] || r;
-}
-
-function translateEdition(e) {
-  const map = {
-    N: "Normal",
-    "1": "1st Ed",
-    U: "Unlimited"
-  };
-  return map[e] || e;
-}
-  
+ 
 function updateProgress() {
   const selectedSet = setSelect.value;
 
