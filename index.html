@@ -319,6 +319,7 @@ function sortChronologically(list) {
     return (a.name || "").localeCompare(b.name || "");
   });
 }
+  
 function populateFilters() {
   const sets = [...new Set(allEditions.map(e => e.set_name))]
     .filter(Boolean)
