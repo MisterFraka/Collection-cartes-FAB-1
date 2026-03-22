@@ -203,11 +203,22 @@ function getSetOrder(setName) {
 }
 
 function normalizeFoiling(e) {
-  const f = String(e.foiling || "").toUpperCase().trim();
+  // 1. si info directe
+  if (e.foiling) {
+    const f = e.foiling.toLowerCase();
 
-  if (f === "S") return "NF";
-  if (f === "R") return "RF";
-  if (f === "C") return "CF";
+    if (f === "c" || f.includes("cold")) return "CF";
+    if (f === "r" || f.includes("rainbow")) return "RF";
+    if (f === "n") return "NF";
+  }
+
+  // 2. fallback via image
+  if (e.image) {
+    const img = e.image.toUpperCase();
+
+    if (img.includes("-CF")) return "CF";
+    if (img.includes("-RF")) return "RF";
+  }
 
   return "NF";
 }
@@ -233,24 +244,24 @@ function translateEdition(e) {
   return map[(e || "").toUpperCase()] || e;
 }
   
-function getFoilOrder(e) {
-  const foil = normalizeFoiling(e);
-
+function getFoilOrder(value) {
+  const foil = normalizeFoiling(value);
   if (foil === "NF") return 0;
   if (foil === "RF") return 1;
   if (foil === "CF") return 2;
-
   return 999;
 }
 
 function extractCardNumber(e) {
+  // 1. essayer card_id
   if (e.card_id) {
-    const match = String(e.card_id).match(/(\d+)/);
+    const match = e.card_id.match(/(\d+)/);
     if (match) return parseInt(match[1], 10);
   }
 
+  // 2. fallback sur image
   if (e.image) {
-    const match = String(e.image).match(/([A-Z]+)(\d+)/);
+    const match = e.image.match(/([A-Z]+)(\d+)/);
     if (match) return parseInt(match[2], 10);
   }
 
@@ -310,16 +321,19 @@ function sortChronologically(list) {
     const setCompare = getSetOrder(a.set_name) - getSetOrder(b.set_name);
     if (setCompare !== 0) return setCompare;
 
-    const numCompare = extractCardNumber(a) - extractCardNumber(b);
-    if (numCompare !== 0) return numCompare;
+    // NUMERO depuis image
+    const aNum = extractCardNumber(a);
+    const bNum = extractCardNumber(b);
+    if (aNum !== bNum) return aNum - bNum;
 
-    const foilCompare = getFoilOrder(a) - getFoilOrder(b);
-    if (foilCompare !== 0) return foilCompare;
+    // FOIL
+    const aFoil = getFoilOrder(normalizeFoiling(a));
+    const bFoil = getFoilOrder(normalizeFoiling(b));
+    if (aFoil !== bFoil) return aFoil - bFoil;
 
-    return (a.name || "").localeCompare(b.name || "");
+    return 0;
   });
 }
-  
 function populateFilters() {
   const sets = [...new Set(allEditions.map(e => e.set_name))]
     .filter(Boolean)
@@ -392,41 +406,35 @@ function render() {
   list = sortChronologically(list);
 
   console.log("TRI FINAL", list.slice(0, 20).map(e => ({
-    name: e.name,
     set: e.set_name,
     card_id: e.card_id,
-    foiling: e.foiling,
-    foilLabel: normalizeFoiling(e),
-    image: e.image
+    foil: e.foil_label || e.foiling_raw || e.foiling
   })));
 
   cardsDiv.innerHTML = "";
-
   list.forEach(e => {
-    const isOwned = !!owned[e.printing_uid];
-    const foilLabel = normalizeFoiling(e);
+  const isOwned = !!owned[e.printing_uid];
+  const foilLabel = normalizeFoiling(e);
+  
+  const div = document.createElement("div");
+  div.className = "card";
 
-    console.log(e.name, e.foiling, foilLabel, e.image);
-
-    const div = document.createElement("div");
-    div.className = "card";
-
-    div.innerHTML = `
-      ${e.image ? `<img src="${e.image}" alt="${e.name}" onerror="this.style.display='none'">` : ""}
-      <div class="card-body">
-        <h3>${e.name}</h3>
-        <div>
-          <span class="badge">${e.set_name || ""}</span>
-          <span class="badge">${translateRarity(e.rarity_name)}</span>
-          ${e.edition_name ? `<span class="badge">${translateEdition(e.edition_name)}</span>` : ""}
-          <span class="badge">${foilLabel}</span>
-        </div>
-        <label>
-          <input type="checkbox" ${isOwned ? "checked" : ""}>
-          Je possède
-        </label>
+  div.innerHTML = `
+    ${e.image ? `<img src="${e.image}" alt="${e.name}" onerror="this.style.display='none'">` : ""}
+    <div class="card-body">
+      <h3>${e.name}</h3>
+      <div>
+        <span class="badge">${e.set_name || ""}</span>
+        <span class="badge">${translateRarity(e.rarity_name)}</span>
+        ${e.edition_name ? `<span class="badge">${translateEdition(e.edition_name)}</span>` : ""}
+        ${foilLabel ? `<span class="badge">${foilLabel}</span>` : ""}
       </div>
-    `;
+      <label>
+        <input type="checkbox" ${isOwned ? "checked" : ""}>
+        Je possède
+      </label>
+    </div>
+  `;
 
     div.querySelector("input").addEventListener("change", () => {
       owned[e.printing_uid] = !isOwned;
@@ -475,4 +483,3 @@ init();
 
 </body>
 </html>
-
